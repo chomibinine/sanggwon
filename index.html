@@ -226,7 +226,6 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 </head>
 <body>
 
-<!-- TOP NAV -->
 <div class="topnav">
   <div class="logo"><div class="logo-dot"></div>상권레이더</div>
   <div class="search-bar">
@@ -235,7 +234,6 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
   </div>
 </div>
 
-<!-- MAP -->
 <div id="kakaoMap"></div>
 <div class="demo-map" id="demoMap">
   <div class="demo-grid"></div>
@@ -244,7 +242,6 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
   <div id="demoPins"></div>
 </div>
 
-<!-- LAYER BAR -->
 <div class="layer-bar">
   <button class="lbtn on" id="lb-foot" onclick="setLyr('foot')">🌡 유동인구</button>
   <button class="lbtn" id="lb-biz"  onclick="setLyr('biz')">🏪 업종 분포</button>
@@ -252,35 +249,29 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
   <button class="lbtn" id="lb-sur"  onclick="setLyr('sur')">📈 생존율</button>
 </div>
 
-<!-- API BADGE -->
 <div class="api-badge">
   <div class="bdot" id="bdot"></div>
   <span id="btxt">데모 모드</span>
 </div>
 
-<!-- BOTTOM SHEET -->
 <div class="sheet sheet-peek" id="sheet">
   <div class="handle-wrap" id="handleWrap">
     <div class="handle"></div>
   </div>
 
-  <!-- PEEK -->
   <div class="peek-area">
     <div class="peek-label">추천 상권</div>
     <div class="chips-row" id="chipsRow"></div>
   </div>
 
-  <!-- FULL -->
   <div class="full-area" id="fullArea"></div>
 </div>
 
-<!-- LOADER -->
 <div class="loader" id="loader">
   <div class="lring"></div>
   <div class="ltxt" id="ltxt">공공데이터 분석 중...</div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast">
   <div class="t-head" id="thead">✓</div>
   <div id="tmsg"></div>
@@ -365,6 +356,39 @@ document.getElementById('handleWrap').addEventListener('click', ()=>{
   setSt(sheetSt==='peek'?'half':sheetSt==='half'?'full':'peek');
 });
 
+// ── OPEN DATA API FETCH ───────────────────────
+async function fetchBizData(lat, lng, radius = 500) {
+  const baseUrl = 'https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInRadius';
+  const API_KEY = '1ddcc7f0063f3f004733b2651211cfe7ae0b11cc01f584205c1546bab1858c60';
+
+  const params = new URLSearchParams({
+    serviceKey: API_KEY,
+    pageNo: 1,
+    numOfRows: 50,
+    radius: radius,
+    cx: lng,
+    cy: lat,
+    type: 'json'
+  });
+
+  try {
+    const response = await fetch(`${baseUrl}?${params.toString()}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const data = await response.json();
+    if (data && data.header && data.header.resultCode === '00') {
+      console.log('API 연동 성공:', data.body.items);
+      return data.body.items;
+    } else {
+      console.error('API 에러:', data.header?.resultMsg || '알 수 없는 에러');
+      return null;
+    }
+  } catch (error) {
+    console.error('Fetch 실패:', error);
+    return null;
+  }
+}
+
 // ── KAKAO LOAD ────────────────────────────────
 function loadKakao() {
   const sc = document.createElement('script');
@@ -406,22 +430,22 @@ function initKakao() {
   });
 
   kakao.maps.event.addListener(map, 'click', e => {
-    const lat=e.latLng.getLat(), lng=e.latLng.getLng();
+    const lat = e.latLng.getLat(), lng = e.latLng.getLng();
     const near = LOCS.reduce((a,b)=>d2(lat,lng,a.lat,a.lng)<d2(lat,lng,b.lat,b.lng)?a:b);
     drawCircle(lat, lng);
-    load(1000, ()=>{ renderPanel(near); setSt('full'); });
+    selectLoc(near.id); 
   });
 
   const ps = new kakao.maps.services.Places();
   document.getElementById('searchInput').addEventListener('keydown', e=>{
     if (e.key!=='Enter') return;
-    const q=e.target.value.trim(); if(!q) return;
-    ps.keywordSearch(q,(data,st)=>{
+    const q = e.target.value.trim(); if(!q) return;
+    ps.keywordSearch(q, (data,st)=>{
       if (st===kakao.maps.services.Status.OK) {
         map.setCenter(new kakao.maps.LatLng(data[0].y,data[0].x)); map.setLevel(5);
-        const near=LOCS.reduce((a,b)=>d2(data[0].y,data[0].x,a.lat,a.lng)<d2(data[0].y,data[0].x,b.lat,b.lng)?a:b);
+        const near = LOCS.reduce((a,b)=>d2(data[0].y,data[0].x,a.lat,a.lng)<d2(data[0].y,data[0].x,b.lat,b.lng)?a:b);
         drawCircle(parseFloat(data[0].y), parseFloat(data[0].x));
-        load(800,()=>{ renderPanel(near); setSt('full'); });
+        selectLoc(near.id);
         toast(`"${data[0].place_name}" 위치로 이동`);
       }
     });
@@ -455,7 +479,7 @@ function initDemo() {
   });
 
   document.getElementById('demoPins').innerHTML = LOCS.map(loc=>{
-    const [px,py]=ll2px(loc.lat,loc.lng,dm.offsetWidth,dm.offsetHeight);
+    const [px,py] = ll2px(loc.lat,loc.lng,dm.offsetWidth,dm.offsetHeight);
     return `<div class="mpin" style="left:${px}px;top:${py}px" onclick="selectLoc(${loc.id})">
       <div class="mpin-body" style="background:${loc.color}"><span class="mpin-icon">📍</span></div>
       <div class="mpin-tag">${loc.name}</div></div>`;
@@ -463,51 +487,71 @@ function initDemo() {
 
   dm.addEventListener('click', e=>{
     if (e.target.closest('.mpin')) return;
-    const rect=dm.getBoundingClientRect();
-    const px=e.clientX-rect.left, py=e.clientY-rect.top;
-    const near=LOCS.reduce((a,b)=>{
+    const rect = dm.getBoundingClientRect();
+    const px = e.clientX-rect.left, py = e.clientY-rect.top;
+    const near = LOCS.reduce((a,b)=>{
       const [ax,ay]=ll2px(a.lat,a.lng,rect.width,rect.height);
       const [bx,by]=ll2px(b.lat,b.lng,rect.width,rect.height);
       return (Math.abs(ax-px)+Math.abs(ay-py))<(Math.abs(bx-px)+Math.abs(by-py))?a:b;
     });
     showRing(px, py);
-    load(1000,()=>{ renderPanel(near); setSt('full'); });
+    selectLoc(near.id);
   });
 }
 
 function showRing(px, py) {
-  const r=document.getElementById('demoRing');
-  r.style.left=px+'px'; r.style.top=py+'px';
-  r.style.width=r.style.height='180px'; r.style.display='block';
+  const r = document.getElementById('demoRing');
+  r.style.left = px+'px'; r.style.top = py+'px';
+  r.style.width = r.style.height = '180px'; r.style.display = 'block';
 }
 function ll2px(lat,lng,w,h){return[(lng-126.88)/.24*w,(1-(lat-37.45)/.18)*h];}
 function hRGB(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
 function d2(a,b,c,e){return Math.sqrt((a-c)**2+(b-e)**2);}
 
 // ── SELECT ────────────────────────────────────
-function selectLoc(id) {
-  const loc=LOCS.find(l=>l.id===id); if(!loc) return;
-  selId=id;
-  document.querySelectorAll('.loc-chip').forEach(c=>c.classList.remove('sel'));
-  const chip=document.getElementById(`chip-${id}`);
+async function selectLoc(id) {
+  const loc = LOCS.find(l => l.id === id); 
+  if(!loc) return;
+  selId = id;
+  
+  document.querySelectorAll('.loc-chip').forEach(c => c.classList.remove('sel'));
+  const chip = document.getElementById(`chip-${id}`);
   chip?.classList.add('sel');
-  chip?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  chip?.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
 
-  if (kakaoOk&&map) {
-    map.setCenter(new kakao.maps.LatLng(loc.lat,loc.lng)); map.setLevel(6);
-    drawCircle(loc.lat,loc.lng);
+  if (kakaoOk && map) {
+    map.setCenter(new kakao.maps.LatLng(loc.lat, loc.lng)); 
+    map.setLevel(6);
+    drawCircle(loc.lat, loc.lng);
   } else {
-    const c=document.getElementById('demoCanvas');
-    const [px,py]=ll2px(loc.lat,loc.lng,c.width,c.height);
-    showRing(px,py);
+    const c = document.getElementById('demoCanvas');
+    const [px, py] = ll2px(loc.lat, loc.lng, c.width, c.height);
+    showRing(px, py);
   }
-  load(1000,()=>{ renderPanel(loc); setSt('full'); });
+
+  load(1500, async () => { 
+    const liveData = await fetchBizData(loc.lat, loc.lng);
+    
+    if (liveData) {
+      loc.biz = liveData.length; 
+      if(loc.biz >= 40) loc.comp = 'VERY HIGH';
+      else if(loc.biz >= 20) loc.comp = 'HIGH';
+      else if(loc.biz >= 10) loc.comp = 'MID';
+      else loc.comp = 'LOW';
+      toast('실시간 상가 데이터를 반영했습니다!', '✓ 업데이트');
+    } else {
+      toast('데이터를 가져오지 못해 기본값을 표시합니다.', '⚠ API 에러');
+    }
+
+    renderPanel(loc); 
+    setSt('full'); 
+  });
 }
 
 // ── CHIPS ─────────────────────────────────────
 function renderChips() {
   document.getElementById('chipsRow').innerHTML = LOCS.map(loc=>{
-    const cls=loc.score>=80?'sg':loc.score>=65?'sy':'sr';
+    const cls = loc.score>=80?'sg':loc.score>=65?'sy':'sr';
     return `<div class="loc-chip" id="chip-${loc.id}" onclick="selectLoc(${loc.id})">
       <div class="lc-top">
         <div class="lc-name">${loc.name}</div>
@@ -524,27 +568,27 @@ function renderChips() {
 
 // ── PANEL ─────────────────────────────────────
 function renderPanel(loc) {
-  const sc=loc.score>=80?'var(--green)':loc.score>=65?'var(--yellow)':'var(--red)';
-  const cc=loc.comp==='LOW'?'var(--green)':loc.comp==='MID'?'var(--yellow)':'var(--red)';
-  const cir=mkCircle(loc.score,sc);
-  const radar=mkRadar(loc.radar,196,['유동','매출','경쟁','임대','생존','접근'],sc);
-  const mx=Math.max(...loc.time);
-  const hbars=loc.time.map((v,i)=>{
-    const h=(v/mx*100).toFixed(0), night=i<6||i>=22;
+  const sc = loc.score>=80?'var(--green)':loc.score>=65?'var(--yellow)':'var(--red)';
+  const cc = loc.comp==='LOW'?'var(--green)':loc.comp==='MID'?'var(--yellow)':'var(--red)';
+  const cir = mkCircle(loc.score, sc);
+  const radar = mkRadar(loc.radar, 196, ['유동','매출','경쟁','임대','생존','접근'], sc);
+  const mx = Math.max(...loc.time);
+  const hbars = loc.time.map((v,i)=>{
+    const h = (v/mx*100).toFixed(0), night = i<6||i>=22;
     return `<div class="hbar" style="height:${h}%;background:${night?'#2a3a52':`hsl(${200-v}deg 70% 50%)`}"></div>`;
   }).join('');
-  const ageBars=Object.entries(loc.age).map(([a,p])=>`
+  const ageBars = Object.entries(loc.age).map(([a,p])=>`
     <div class="arow">
       <div class="a-lbl">${a}</div>
       <div class="a-trk"><div class="a-fill" data-w="${p}"></div></div>
       <div class="a-pct">${p}%</div>
     </div>`).join('');
-  const comps=loc.rivals.map(r=>`
+  const comps = loc.rivals.map(r=>`
     <div class="comp-item">
       <div><div class="ci-name">${r.n}</div><div class="ci-dist">${r.d}m 거리</div></div>
       <div class="ci-sales">월 ${r.m.toLocaleString()}만</div>
     </div>`).join('');
-  const fs=loc.footChg>=0?'+':'', ss=loc.salesChg>=0?'+':'';
+  const fs = loc.footChg>=0?'+':'', ss = loc.salesChg>=0?'+':'';
 
   document.getElementById('fullArea').innerHTML = `
     <div class="loc-header">
@@ -607,18 +651,23 @@ function mkCircle(score, color) {
 }
 
 function mkRadar(vals, size, labels, stroke) {
-  const cx=size/2,cy=size/2,r=size*.32,n=labels.length;
-  const ang=i=>(i*2*Math.PI/n)-Math.PI/2;
-  let g='',ax='';
+  const cx=size/2, cy=size/2, r=size*.32, n=labels.length;
+  const ang = i => (i*2*Math.PI/n)-Math.PI/2;
+  let g='', ax='';
   [.25,.5,.75,1].forEach(s=>{
-    const pts=Array.from({length:n},(_,i)=>`${cx+r*s*Math.cos(ang(i))},${cy+r*s*Math.sin(ang(i))}`).join(' ');
+    const pts = Array.from({length:n},(_,i)=>`${cx+r*s*Math.cos(ang(i))},${cy+r*s*Math.sin(ang(i))}`).join(' ');
     g+=`<polygon points="${pts}" fill="none" stroke="var(--border)" stroke-width="1"/>`;
   });
-  for(let i=0;i<n;i++){const a=ang(i);ax+=`<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(a)}" y2="${cy+r*Math.sin(a)}" stroke="var(--border)" stroke-width="1"/>`;}
-  const dp=vals.map((v,i)=>`${cx+r*v*Math.cos(ang(i))},${cy+r*v*Math.sin(ang(i))}`).join(' ');
-  const dots=vals.map((v,i)=>`<circle cx="${cx+r*v*Math.cos(ang(i))}" cy="${cy+r*v*Math.sin(ang(i))}" r="3.5" fill="${stroke}"/>`).join('');
-  const lbs=labels.map((l,i)=>{const a=ang(i),lx=cx+(r+20)*Math.cos(a),ly=cy+(r+20)*Math.sin(a);
-    return `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" fill="var(--dim)" font-size="10" font-family="Noto Sans KR">${l}</text>`;}).join('');
+  for(let i=0;i<n;i++){
+    const a=ang(i); 
+    ax+=`<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(a)}" y2="${cy+r*Math.sin(a)}" stroke="var(--border)" stroke-width="1"/>`;
+  }
+  const dp = vals.map((v,i)=>`${cx+r*v*Math.cos(ang(i))},${cy+r*v*Math.sin(ang(i))}`).join(' ');
+  const dots = vals.map((v,i)=>`<circle cx="${cx+r*v*Math.cos(ang(i))}" cy="${cy+r*v*Math.sin(ang(i))}" r="3.5" fill="${stroke}"/>`).join('');
+  const lbs = labels.map((l,i)=>{
+    const a=ang(i), lx=cx+(r+20)*Math.cos(a), ly=cy+(r+20)*Math.sin(a);
+    return `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" fill="var(--dim)" font-size="10" font-family="Noto Sans KR">${l}</text>`;
+  }).join('');
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
     ${g}${ax}<polygon points="${dp}" fill="${stroke}1a" stroke="${stroke}" stroke-width="1.5"/>
     ${dots}${lbs}</svg>`;
@@ -632,31 +681,39 @@ function setLyr(l) {
   toast(`${nm[l]} 레이어 전환`);
 }
 
-// ── LOADER ────────────────────────────────────
+// ── LOADER (ASYNC UPDATED) ────────────────────
 const MSGS=['공공데이터 연동 중...','유동인구 분석 중...','입지 점수 계산 중...','리포트 생성 중...'];
-function load(ms, cb) {
-  const el=document.getElementById('loader'); let i=0;
-  document.getElementById('ltxt').textContent=MSGS[0];
+async function load(ms, cb) {
+  const el = document.getElementById('loader'); let i=0;
+  document.getElementById('ltxt').textContent = MSGS[0];
   el.classList.add('show');
-  const iv=setInterval(()=>{ document.getElementById('ltxt').textContent=MSGS[++i%MSGS.length]; },ms/4);
-  setTimeout(()=>{ clearInterval(iv); el.classList.remove('show'); cb&&cb(); },ms);
+  
+  const iv = setInterval(()=>{ 
+    document.getElementById('ltxt').textContent = MSGS[++i%MSGS.length]; 
+  }, ms/4);
+  
+  await new Promise(r => setTimeout(r, ms)); // 최소 UI 체류 시간 보장
+  if(cb) await cb(); // 콜백이 비동기 함수일 경우 대기
+  
+  clearInterval(iv);
+  el.classList.remove('show');
 }
 
 // ── TOAST ─────────────────────────────────────
 function toast(msg, head='✓ 알림') {
-  const el=document.getElementById('toast');
-  document.getElementById('thead').textContent=head;
-  document.getElementById('tmsg').textContent=msg;
+  const el = document.getElementById('toast');
+  document.getElementById('thead').textContent = head;
+  document.getElementById('tmsg').textContent = msg;
   el.classList.add('show');
   clearTimeout(toastTm);
-  toastTm=setTimeout(()=>el.classList.remove('show'),2800);
+  toastTm = setTimeout(()=>el.classList.remove('show'), 2800);
 }
 
 // ── SEARCH (demo) ─────────────────────────────
 document.getElementById('searchInput').addEventListener('keydown', e=>{
   if (e.key!=='Enter'||kakaoOk) return;
-  const q=e.target.value.trim(); if(!q) return;
-  const found=LOCS.find(l=>l.name.includes(q)||l.district.includes(q));
+  const q = e.target.value.trim(); if(!q) return;
+  const found = LOCS.find(l=>l.name.includes(q)||l.district.includes(q));
   if(found) selectLoc(found.id);
   else toast('검색 결과가 없습니다','⚠ 알림');
 });
