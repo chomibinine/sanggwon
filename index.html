@@ -86,7 +86,6 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
   <div class="full-area" id="fullArea"></div>
 </div>
 
-<!-- 상세 리포트 모달 -->
 <div class="modal" id="reportModal">
   <div class="modal-header">
     <h1 id="rtitle" style="font-size:1.2rem; font-weight:900;">AI 정밀 상권 분석</h1>
@@ -104,7 +103,7 @@ let storeMarkers = [];
 let currentLoc = { lat: 37.5571, lng: 126.9245, name: '홍대입구', addr: '마포구 서교동', lawdCd: '11440' };
 let curLcls = '', curMcls = '', curName = '전체 상가';
 
-// 전역 리포트 데이터
+// 전역 리포트 데이터 캐시
 let reportDataCache = { bizCount: 0, insight: {}, realEstateStr: "조회 중...", realEstateDesc: "" };
 
 const API_KEY = '1ddcc7f0063f3f004733b2651211cfe7ae0b11cc01f584205c1546bab1858c60';
@@ -122,16 +121,21 @@ function getLawdCd(lng, lat) {
   });
 }
 
-// ── 2. 국토교통부 실거래가 API (XML 파싱) ──
+// ── 2. 국토교통부 실거래가 API (CORS 우회 프록시 적용) ──
 async function fetchRealEstateData(lawdCd) {
-  // 최근 거래가 있었을 확률이 높은 1~2달 전 데이터를 조회
   const date = new Date(); date.setMonth(date.getMonth() - 2);
   const dealYmd = date.getFullYear() + String(date.getMonth() + 1).padStart(2, '0');
   
-  const url = `https://apis.data.go.kr/1613000/RTMSDataSvcNrgTrade/getRTMSDataSvcNrgTrade?serviceKey=${API_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}&numOfRows=50`;
+  // 국토부 실제 엔드포인트
+  const targetUrl = `https://apis.data.go.kr/1613000/RTMSDataSvcNrgTrade/getRTMSDataSvcNrgTrade?serviceKey=${API_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}&numOfRows=50`;
+
+  // ★ allorigins 프록시로 CORS 회피 ★
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(proxyUrl);
+    if (!res.ok) throw new Error("프록시 응답 에러");
+    
     const xmlText = await res.text();
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlText, "text/xml");
@@ -155,7 +159,7 @@ async function fetchRealEstateData(lawdCd) {
     
     return pricePerPyeong;
   } catch(e) {
-    console.warn("국토부 실거래가 조회 실패 (CORS 또는 에러)", e);
+    console.warn("국토부 실거래가 프록시 조회 실패", e);
     return null;
   }
 }
@@ -183,12 +187,12 @@ async function processLocation(lat, lng, name, addr) {
     storeMarkers.forEach(m => m.setMap(null)); storeMarkers = [];
   }
 
-  load(1500, async () => {
+  load(1800, async () => {
     // 1. 위경도를 법정동 코드로 변환
     const lawdCd = await getLawdCd(lng, lat);
     currentLoc.lawdCd = lawdCd;
 
-    // 2. 상가 API와 국토부 API 동시 호출! (속도 최적화)
+    // 2. 상가 API와 국토부 프록시 API 동시 호출
     const [bizData, realEstatePrice] = await Promise.all([
       fetchBizData(lat, lng, curLcls, curMcls),
       fetchRealEstateData(lawdCd)
@@ -203,14 +207,13 @@ async function processLocation(lat, lng, name, addr) {
       });
     }
 
-    // 국토부 데이터 처리
+    // 국토부 시세 데이터 처리
     if(realEstatePrice) {
-      reportDataCache.realEstateStr = `${realEstatePrice.toFixed(1)}천만 원`;
-      reportDataCache.realEstateDesc = `국토교통부 실거래가 기반 (${lawdCd.substring(0,5)} 지역)`;
+      reportDataCache.realEstateStr = `${realEstatePrice.toLocaleString()}천만 원`;
+      reportDataCache.realEstateDesc = `국토교통부 실거래가 평균 (${lawdCd.substring(0,5)} 기준)`;
     } else {
-      // API 실패나 데이터 없을 시 방어 로직
       reportDataCache.realEstateStr = "시세 분석 불가";
-      reportDataCache.realEstateDesc = "최근 2개월 내 해당 지역 실거래 데이터 없음 (또는 API 지연)";
+      reportDataCache.realEstateDesc = "해당 지역 최근 실거래 데이터가 부족합니다.";
     }
 
     reportDataCache.insight = generateInsight(reportDataCache.bizCount, curName);
@@ -239,9 +242,8 @@ function openReport() {
   const targetAge = {'20대': 42, '30대': 28, '40대': 15, '기타': 15};
   
   content.innerHTML = `
-    <!-- 실제 국토교통부 부동산 시세 섹션 -->
     <div class="report-sec">
-      <div class="report-t">🏢 상가 시세 동향 (1평 기준)</div>
+      <div class="report-t">🏢 상업업무용 상가 시세 동향 (1평 기준)</div>
       <div style="background:var(--card2); padding:16px; border-radius:12px; border:1px solid var(--border);">
         <div style="font-size:0.65rem; color:var(--dim); margin-bottom:6px;">평당 매매가 평균</div>
         <div style="font-size:1.6rem; font-weight:900; color:var(--cyan); margin-bottom:4px;">${reportDataCache.realEstateStr}</div>
@@ -250,7 +252,6 @@ function openReport() {
       <p style="font-size:0.65rem; color:var(--dim); margin-top:12px; text-align:right;">* 출처: 국토교통부 OpenAPI</p>
     </div>
 
-    <!-- 매출 분석 섹션 -->
     <div class="report-sec">
       <div class="report-t">📈 매출 성장성 추이</div>
       <div style="font-size:1.5rem; font-weight:900; color:var(--green); margin-bottom:5px;">월 평균 ${(salesData[5]).toLocaleString()}만 원</div>
@@ -261,7 +262,7 @@ function openReport() {
 
     <div class="report-sec" style="background:rgba(255, 71, 87, 0.05); border-color:rgba(255, 71, 87, 0.2);">
       <div class="report-t" style="color:var(--red);">⚠️ 주의사항</div>
-      <p style="font-size:0.8rem; line-height:1.5;">최근 상가 임대료가 가파르게 상승하는 지역일 수 있습니다. 위 국토부 평균 매매가를 참고하여 수익률을 보수적으로 산정하세요.</p>
+      <p style="font-size:0.8rem; line-height:1.5;">최근 상가 매매가가 지역 평균 대비 가파르게 상승하거나 변동성이 클 수 있습니다. 위 국토부 평균 매매가를 참고하여 수익률을 보수적으로 산정하세요.</p>
     </div>
   `;
   modal.classList.add('show');
