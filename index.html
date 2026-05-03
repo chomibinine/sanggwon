@@ -21,7 +21,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 
 /* ── 온보딩(설문) UI ── */
 #onboarding { position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex; flex-direction:column; transition:all 0.5s ease; }
-#onboarding.hidden { opacity:0; visibility:hidden; pointer-events:none; display:none; } /* 완전히 사라지게 수정 */
+#onboarding.hidden { opacity:0; visibility:hidden; pointer-events:none; display:none; }
 .ob-header { padding:20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
 .ob-logo { font-size:1.1rem; font-weight:900; color:var(--cyan); display:flex; align-items:center; gap:6px; }
 .ob-logo-dot { width:7px; height:7px; background:var(--cyan); border-radius:50%; animation:pdot 2s infinite; }
@@ -45,7 +45,6 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 .search-bar input { flex:1; background:none; border:none; color:var(--text); font-size:.85rem; outline:none; }
 #kakaoMap { position:fixed; top:52px; left:0; right:0; bottom:0; z-index:0; }
 
-/* 바텀 시트 수정: 반(half) 상태에서도 내용이 보이게 함 */
 .sheet { position:fixed; left:0; right:0; bottom:0; z-index:200; background:var(--card); border-radius:20px 20px 0 0; border-top:1px solid var(--border); transition:transform .35s cubic-bezier(0.21, 0.61, 0.35, 1); max-height:92vh; display:flex; flex-direction:column; transform:translateY(100%); }
 .sheet-peek { transform:translateY(calc(100% - 158px)); }
 .sheet-half { transform:translateY(40%); }
@@ -53,7 +52,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 .handle-wrap { display:flex; justify-content:center; padding:10px 0 10px; cursor:pointer; flex-shrink:0; }
 .handle { width:36px; height:4px; background:var(--muted); border-radius:2px; }
 .full-area { flex:1; overflow-y:auto; padding:0 16px 30px; display:none; }
-.sheet-half .full-area, .sheet-full .full-area { display:block; } /* half 상태에서도 보이게 수정 */
+.sheet-half .full-area, .sheet-full .full-area { display:block; }
 
 .insight-box { background:rgba(0,229,255,0.06); border:1px solid rgba(0,229,255,0.2); border-radius:12px; padding:16px; margin-bottom:12px; }
 .mc { background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; }
@@ -66,7 +65,12 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
 .close-btn { font-size:1.5rem; color:var(--dim); cursor:pointer; }
 .report-sec { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:16px; }
-.report-t { font-size:0.9rem; font-weight:800; margin-bottom:15px; color:var(--cyan); display:flex; align-items:center; gap:8px; }
+.report-t { font-size:0.95rem; font-weight:900; margin-bottom:15px; color:var(--cyan); display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border); padding-bottom:10px; }
+
+.data-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:0.85rem; }
+.data-lbl { color:var(--dim); }
+.data-val { font-weight:700; color:var(--text); }
+.data-highlight { font-size:1.2rem; font-weight:900; color:var(--yellow); }
 
 .loader { position:fixed; inset:0; background:rgba(7,9,15,.85); z-index:500; display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .22s; }
 .loader.show { opacity:1; pointer-events:all; }
@@ -116,11 +120,11 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 
   <div class="step-container" id="step4">
     <div class="step-title">먼저 살펴보고 싶은<br>지역을 골라주세요.</div>
-    <div class="narrative">"준비 끝! 이제 선택하신 지역의 실제 데이터를 불러와서 수익 시뮬레이션을 시작할게요."</div>
+    <div class="narrative">"마지막 단계입니다! 지역을 고르시면 해당 구역의 '실제 부동산 시세'를 바탕으로 현실적인 리포트를 만들어 드릴게요."</div>
     <div class="opt-btn" onclick="selectOpt(4, 'SEOUL', '', '서울 강남', this)">🏢 서울 강남 (역삼/신사)</div>
     <div class="opt-btn" onclick="selectOpt(4, 'MAPO', '', '서울 마포', this)">🎨 서울 마포 (홍대/합정)</div>
     <div class="opt-btn" onclick="selectOpt(4, 'SEJONG', '', '세종특별자치시', this)">🌳 세종시 (도담/나성)</div>
-    <button class="action-btn" id="btn-next4" onclick="finishOnboarding()">분석 리포트 생성</button>
+    <button class="action-btn" id="btn-next4" onclick="finishOnboarding()">부동산 기반 리포트 생성</button>
   </div>
 </div>
 
@@ -142,7 +146,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
   <div id="reportContent"></div>
 </div>
 
-<div class="loader" id="loader"><div class="lring"></div><div id="ltxt" style="font-size:.8rem; color:var(--dim); margin-top:10px;">데이터 분석 중...</div></div>
+<div class="loader" id="loader"><div class="lring"></div><div id="ltxt" style="font-size:.8rem; color:var(--dim); margin-top:10px;">부동산 시세 수집 중...</div></div>
 <div class="toast" id="toast"><div id="thead" style="font-weight:700; color:var(--green); font-size:.7rem;">✓</div><div id="tmsg"></div></div>
 
 <script>
@@ -166,7 +170,7 @@ function selectOpt(step, val1, val2, label, btn) {
 function nextStep(s){ document.querySelectorAll('.step-container').forEach(c=>c.classList.remove('active')); document.getElementById(`step${s}`).classList.add('active'); document.getElementById(`p${s}`).classList.add('active'); }
 
 function finishOnboarding(){
-  document.getElementById('onboarding').classList.add('hidden'); // hidden 클래스가 display: none 포함
+  document.getElementById('onboarding').classList.add('hidden');
   if(userPrefs.region==='SEOUL') currentLoc={lat:37.4979,lng:127.0276,name:'강남역',addr:'서울 강남구'};
   else if(userPrefs.region==='MAPO') currentLoc={lat:37.5571,lng:126.9245,name:'홍대입구',addr:'서울 마포구'};
   else if(userPrefs.region==='SEJONG') currentLoc={lat:36.5146,lng:127.2588,name:'도담동',addr:'세종특별자치시'};
@@ -189,62 +193,87 @@ async function fetchAll(lat, lng) {
     const bizCount = bRes.body ? bRes.body.items.length : 0;
     const parser = new DOMParser();
     const items = parser.parseFromString(mRes, "text/xml").querySelectorAll("item");
-    let avgPrice = 45;
+    let avgPrice = 4500; // 기본값 4500만 원
     if(items.length > 0) {
       let tP=0, tA=0;
       items.forEach(i => { tP+=parseInt(i.querySelector("거래금액").textContent.replace(/,/g,'')); tA+=parseFloat(i.querySelector("건물면적").textContent); });
-      avgPrice = Math.round(((tP/tA)*3.3)/1000);
+      avgPrice = Math.round((tP/tA)*3.3); // 만 원 단위 평당 매매가
     }
     return { bizCount, realPrice: avgPrice };
-  } catch(e) { return { bizCount: 8, realPrice: 42 }; }
+  } catch(e) { return { bizCount: 8, realPrice: 4500 }; }
 }
 
 async function processLocation(lat, lng, name, addr) {
   currentLoc = { lat, lng, name, addr };
   if(kakaoOk) { map.setCenter(new kakao.maps.LatLng(lat, lng)); drawCircle(lat,lng); }
   
-  load(1500, async () => {
+  load(2000, async () => {
     const data = await fetchAll(lat, lng);
     analysisData = data;
     renderSheet(name, addr, data.bizCount);
-    setSt('half'); // 분석 끝나면 자동으로 시트 반쯤 올림
+    setSt('half');
   });
 }
 
 function openReport() {
   const modal = document.getElementById('reportModal');
   const content = document.getElementById('reportContent');
+  
+  // 기준 평수 (15평)
   const pyeong = 15;
-  const deposit = analysisData.realPrice * 0.15 * pyeong;
-  const interior = userPrefs.lcls === 'I' ? 250 * pyeong : 150 * pyeong;
-  const totalInvest = Math.round(deposit + interior + 2000);
-  const avgSales = Math.round(Math.random()*1500 + 2500);
-  const rent = Math.round(analysisData.realPrice * 0.005 * pyeong);
-  const rawMaterial = Math.round(avgSales * 0.35);
-  const labor = 450;
-  const netProfit = avgSales - (rent + rawMaterial + labor + 100);
-  const bepMonth = Math.round(totalInvest / netProfit);
+  
+  // 부동산 공식 기반 추정 (수익률 5% 가정)
+  // 월 임대료 = (매매가 * 0.05) / 12
+  const totalSalePrice = analysisData.realPrice * pyeong; // 총 매매가 (만 원)
+  const monthlyRent = Math.round((totalSalePrice * 0.05) / 12); 
+  const deposit = monthlyRent * 12; // 보증금은 보통 월세의 1년치
+  const keyMoney = Math.round(monthlyRent * 10); // 권리금 (월세 10개월치 가설)
+  
+  // 생존을 위한 타겟 매출 (월세가 매출의 10%를 넘으면 위험)
+  const targetSales = monthlyRent * 10;
+  const targetSalesCups = Math.round((targetSales * 10000) / 4500); // 4500원 객단가 기준
 
   content.innerHTML = `
     <div class="report-sec">
-      <div class="report-t">💰 예상 초기 투자비용</div>
-      <div style="font-size:1.6rem; font-weight:900; color:var(--yellow); margin-bottom:8px;">약 ${Math.round(totalInvest/1000*10)/10}억 원</div>
-      <div style="font-size:0.75rem; color:var(--dim); line-height:1.6;">• 보증금: ${Math.round(deposit).toLocaleString()}만 원 / • 시설비: ${Math.round(interior+2000).toLocaleString()}만 원</div>
-    </div>
-    <div class="report-sec">
-      <div class="report-t">📈 월 손익 시뮬레이션</div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
-        <div class="mc"><div class="mc-l">기대 매출</div><div class="mc-v">${avgSales.toLocaleString()}만</div></div>
-        <div class="mc"><div class="mc-l">고정비</div><div class="mc-v" style="color:var(--red)">${(rent+labor).toLocaleString()}만</div></div>
+      <div class="report-t">🏢 임대료 및 점포 시세 (15평 기준)</div>
+      <div class="data-row">
+        <span class="data-lbl">평당 매매 실거래가</span>
+        <span class="data-val">${analysisData.realPrice.toLocaleString()}만 원</span>
       </div>
-      <div style="background:rgba(34,211,164,0.1); padding:15px; border-radius:12px; border:1px solid var(--green);">
-        <div style="font-size:0.7rem; color:var(--green); font-weight:700; margin-bottom:4px;">예상 월 순수익</div>
-        <div style="font-size:1.5rem; font-weight:900; color:var(--green);">${netProfit.toLocaleString()}만 원</div>
+      <div class="data-row" style="margin-top:20px; padding-top:15px; border-top:1px dashed var(--border);">
+        <span class="data-lbl">예상 보증금</span>
+        <span class="data-val">${deposit.toLocaleString()}만 원</span>
       </div>
+      <div class="data-row">
+        <span class="data-lbl">예상 바닥 권리금 (주의!)</span>
+        <span class="data-val" style="color:var(--red)">+ 약 ${keyMoney.toLocaleString()}만 원</span>
+      </div>
+      <div style="background:rgba(255,191,36,0.1); padding:16px; border-radius:12px; margin-top:16px; text-align:center;">
+        <div style="font-size:0.75rem; color:var(--yellow); font-weight:700; margin-bottom:6px;">이 상권의 추정 월세 (건물 수익률 5% 가정)</div>
+        <div class="data-highlight">월 ${monthlyRent.toLocaleString()}만 원</div>
+      </div>
+      <p style="font-size:0.75rem; color:var(--dim); margin-top:12px; line-height:1.5;">
+        * 공공데이터 실거래가를 역산한 값으로 1층 대로변 여부에 따라 차이가 큽니다.<br>
+        * 권리금은 상권 등급에 따라 매우 유동적이며, 초기 자본금 산정 시 반드시 여유를 두어야 합니다.
+      </p>
     </div>
-    <div class="report-sec">
-      <div class="report-t">📅 투자금 회수 기간</div>
-      <p style="font-size:0.85rem;">투자금 회수까지 약 <b>${bepMonth}개월</b> 예상됩니다.</p>
+
+    <div class="report-sec" style="border-color:var(--cyan);">
+      <div class="report-t" style="color:var(--cyan);">🔥 생존 마지노선 (BEP) 분석</div>
+      <p style="font-size:0.85rem; line-height:1.6; margin-bottom:16px;">
+        외식업의 불문율! 임대료가 매출의 10~15%를 넘어가면 숨만 쉬어도 적자가 납니다. 이 월세를 감당하려면 적어도 아래의 매출을 올려야 합니다.
+      </p>
+      <div class="data-row">
+        <span class="data-lbl">생존 목표 월 매출 (월세x10)</span>
+        <span class="data-val">${targetSales.toLocaleString()}만 원</span>
+      </div>
+      <div class="data-row">
+        <span class="data-lbl">일 평균 목표 (30일 영업 기준)</span>
+        <span class="data-val">${Math.round(targetSales/30).toLocaleString()}만 원</span>
+      </div>
+      <div style="background:var(--card2); padding:16px; border-radius:8px; margin-top:16px;">
+        <span style="font-size:0.8rem; color:var(--text);">☕ 객단가 4,500원 기준, 하루에 <b>${Math.round(targetSalesCups/30)}명</b>의 결제 고객을 꾸준히 만들어낼 자신이 있으신가요?</span>
+      </div>
     </div>
   `;
   modal.classList.add('show');
@@ -259,10 +288,10 @@ function renderSheet(name, addr, biz) {
     <div class="insight-box">
       <div style="font-size:0.65rem; color:var(--cyan); font-weight:900; margin-bottom:6px;">창업 입지 한 줄 평</div>
       <div style="font-size:0.9rem; font-weight:800; margin-bottom:6px;">${biz > 20 ? '🔴 경쟁 치열' : '🟢 진입 추천'}</div>
-      <p style="font-size:0.8rem; line-height:1.5;">${userPrefs.catName} 매장이 주변에 ${biz}개 있어요. 타겟 적합도가 높으니 수익 리포트를 확인해 보세요!</p>
+      <p style="font-size:0.8rem; line-height:1.5;">${userPrefs.catName} 매장이 주변에 ${biz}개 있어요. 건물 매매가 기반으로 임대료를 추정해 드릴게요.</p>
     </div>
     <button style="width:100%; padding:18px; background:var(--cyan); color:#000; border:none; border-radius:14px; font-weight:900; font-size:0.95rem; cursor:pointer;" onclick="openReport()">
-      📊 상세 수익 시뮬레이터 확인
+      📊 상세 임대료 & 생존 마지노선 확인
     </button>
   `;
 }
