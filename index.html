@@ -19,7 +19,33 @@
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; }
 
-/* UI 공통 */
+/* ── 온보딩(설문) UI ── */
+#onboarding { position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex; flex-direction:column; transition:opacity 0.5s ease, transform 0.5s ease; }
+#onboarding.hidden { opacity:0; transform:translateY(-20px); pointer-events:none; }
+
+.ob-header { padding:20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+.ob-logo { font-size:1.1rem; font-weight:900; color:var(--cyan); display:flex; align-items:center; gap:6px; }
+.ob-logo-dot { width:7px; height:7px; background:var(--cyan); border-radius:50%; animation:pdot 2s infinite; }
+.progress-bar { display:flex; gap:4px; }
+.p-dot { width:24px; height:4px; background:var(--border); border-radius:2px; transition:background 0.3s; }
+.p-dot.active { background:var(--cyan); }
+
+.step-container { flex:1; padding:24px 20px; display:none; flex-direction:column; overflow-y:auto; }
+.step-container.active { display:flex; animation:fadeIn 0.4s ease forwards; }
+@keyframes fadeIn { from{opacity:0; transform:translateX(10px);} to{opacity:1; transform:translateX(0);} }
+
+.step-title { font-size:1.4rem; font-weight:900; margin-bottom:16px; line-height:1.3; }
+.narrative { background:var(--card2); border-left:3px solid var(--cyan); padding:16px; border-radius:8px; font-size:0.85rem; line-height:1.6; color:var(--text); margin-bottom:24px; }
+.narrative.bini { border-left-color:var(--yellow); }
+
+.opt-btn { background:var(--bg); border:1px solid var(--border); padding:16px; border-radius:12px; margin-bottom:10px; color:var(--dim); font-weight:700; cursor:pointer; text-align:left; display:flex; justify-content:space-between; align-items:center; transition:all 0.2s; }
+.opt-btn.sel { border-color:var(--cyan); background:rgba(0,229,255,.08); color:var(--text); box-shadow:0 4px 12px rgba(0,229,255,.1); }
+.opt-btn.sel::after { content:'✓'; color:var(--cyan); font-weight:900; }
+
+.action-btn { background:var(--cyan); color:#000; padding:16px; border:none; border-radius:12px; font-weight:900; font-size:1rem; cursor:pointer; margin-top:auto; width:100%; transition:opacity 0.2s; opacity:0.5; pointer-events:none; }
+.action-btn.active { opacity:1; pointer-events:all; }
+
+/* ── 기존 UI 공통 ── */
 .topnav { position:fixed; top:0; left:0; right:0; z-index:300; height:52px; background:rgba(7,9,15,.96); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 14px; gap:10px; }
 .search-bar { flex:1; background:var(--card2); border:1px solid var(--border); border-radius:22px; display:flex; align-items:center; padding:0 13px; height:36px; }
 .search-bar input { flex:1; background:none; border:none; color:var(--text); font-size:.85rem; outline:none; }
@@ -30,7 +56,6 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 .lbtn { flex-shrink:0; background:rgba(7,9,15,.9); border:1px solid var(--border); border-radius:20px; padding:6px 14px; font-size:.72rem; font-weight:700; color:var(--dim); white-space:nowrap; cursor:pointer; transition:all 0.2s;}
 .lbtn.on { background:rgba(0,229,255,.12); border-color:var(--cyan); color:var(--cyan); }
 
-/* 바텀 시트 */
 .sheet { position:fixed; left:0; right:0; bottom:0; z-index:200; background:var(--card); border-radius:20px 20px 0 0; border-top:1px solid var(--border); transition:transform .35s; max-height:92vh; display:flex; flex-direction:column; }
 .sheet-peek { transform:translateY(calc(100% - 158px)); }
 .sheet-half { transform:translateY(38%); }
@@ -40,21 +65,11 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 .full-area { flex:1; overflow-y:auto; padding:0 14px 24px; display:none; }
 .sheet-full .full-area { display:block; }
 
-/* 인사이트 박스 */
 .insight-box { background:rgba(0,229,255,0.06); border:1px solid rgba(0,229,255,0.2); border-radius:12px; padding:16px; margin-bottom:12px; }
 .mc { background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; }
 .mc-l { font-size:.58rem; font-weight:700; color:var(--dim); margin-bottom:4px; }
 .mc-v { font-family:'DM Mono',monospace; font-size:1.1rem; }
 
-/* 모달 리포트 */
-.modal { position:fixed; inset:0; z-index:400; background:var(--bg); transform:translateY(100%); transition:transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow-y:auto; padding:20px; padding-top:60px;}
-.modal.show { transform:translateY(0); }
-.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
-.close-btn { font-size:1.5rem; color:var(--dim); cursor:pointer; }
-.report-sec { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:16px; }
-.report-t { font-size:0.9rem; font-weight:800; margin-bottom:15px; color:var(--cyan); display:flex; align-items:center; gap:8px; }
-
-/* 로더 & 토스트 */
 .loader { position:fixed; inset:0; background:rgba(7,9,15,.85); z-index:500; display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .22s; }
 .loader.show { opacity:1; pointer-events:all; }
 .lring { width:40px; height:40px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--cyan); animation:spin .75s linear infinite; }
@@ -65,111 +80,158 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 </head>
 <body>
 
+<div id="onboarding">
+  <div class="ob-header">
+    <div class="ob-logo"><div class="ob-logo-dot"></div>상권레이더</div>
+    <div class="progress-bar">
+      <div class="p-dot active" id="p1"></div>
+      <div class="p-dot" id="p2"></div>
+      <div class="p-dot" id="p3"></div>
+    </div>
+  </div>
+
+  <div class="step-container active" id="step1">
+    <div class="step-title">어떤 업종의 창업을<br>준비 중이신가요?</div>
+    <div class="narrative">
+      "사장님, 창업 준비하시느라 막막하시죠? 가장 먼저 진입할 시장을 정해야 경쟁 강도와 필요 자본을 분석할 수 있어요."
+    </div>
+    <div class="opt-btn" onclick="selectOpt(1, 'I', 'I12', '카페/커피점', this)">☕ 카페 / 베이커리</div>
+    <div class="opt-btn" onclick="selectOpt(1, 'I', 'I01', '한식 식당', this)">🍚 일반 음식점 (한식/양식 등)</div>
+    <div class="opt-btn" onclick="selectOpt(1, 'R', '', '학원/교육', this)">📚 학원 / 교육 서비스</div>
+    <div class="opt-btn" onclick="selectOpt(1, 'G', 'G02', '편의점', this)">🏪 편의점 / 소매점</div>
+    <button class="action-btn" id="btn-next1" onclick="nextStep(2)">다음으로 (1/3)</button>
+  </div>
+
+  <div class="step-container" id="step2">
+    <div class="step-title">초기 자본금(예산)은<br>어느 정도이신가요?</div>
+    <div class="narrative">
+      "무작정 유동인구가 많은 A급 상권은 임대료와 권리금 허들이 너무 높아요. 사장님의 현실적인 예산에 맞는 최적의 입지를 찾아드릴게요."
+    </div>
+    <div class="opt-btn" onclick="selectOpt(2, '5000', '', '5천만 원 이하', this)">💸 5,000만 원 이하 (소자본)</div>
+    <div class="opt-btn" onclick="selectOpt(2, '10000', '', '1억 원 이하', this)">💰 5,000만 원 ~ 1억 원</div>
+    <div class="opt-btn" onclick="selectOpt(2, '20000', '', '2억 원 이하', this)">💎 1억 원 ~ 2억 원</div>
+    <div class="opt-btn" onclick="selectOpt(2, '30000', '', '2억 원 초과', this)">🏦 2억 원 초과 (대형 점포)</div>
+    <button class="action-btn" id="btn-next2" onclick="nextStep(3)">다음으로 (2/3)</button>
+  </div>
+
+  <div class="step-container" id="step3">
+    <div class="step-title">가장 잡고 싶은<br>핵심 고객층은 누구인가요?</div>
+    <div class="narrative bini">
+      "요즘은 타겟이 확실해야 살아남는 거 아시죠?! 시간대별로 붐비는 사람들이 다 다르니까, 누구한테 팔지 확실히 골라보세요!"
+    </div>
+    <div class="opt-btn" onclick="selectOpt(3, '2030F', '', '2030 여성', this)">👩‍🦰 2030 여성 (트렌드/감성 타겟)</div>
+    <div class="opt-btn" onclick="selectOpt(3, 'WORK', '', '직장인', this)">💼 인근 직장인 (점심/회식 타겟)</div>
+    <div class="opt-btn" onclick="selectOpt(3, 'STUDENT', '', '학생', this)">🎒 학생/10대 (방과 후 타겟)</div>
+    <div class="opt-btn" onclick="selectOpt(3, 'FAMILY', '', '가족 단위', this)">👨‍👩‍👧 가족 단위 (주거단지 배후 타겟)</div>
+    <button class="action-btn" id="btn-next3" onclick="finishOnboarding()">내게 맞는 상권 분석하기</button>
+  </div>
+</div>
+
 <div class="topnav">
   <div class="logo"><div class="logo-dot"></div>상권레이더</div>
-  <div class="search-bar"><input type="text" id="searchInput" placeholder="지역이나 업종 검색..."></div>
+  <div class="search-bar"><input type="text" id="searchInput" placeholder="지역 검색..."></div>
 </div>
 
 <div id="kakaoMap"></div>
 
-<div class="layer-bar" id="categoryFilter">
-  <button class="lbtn on" onclick="setCategory('', '', '전체 상가', this)">🏢 전체</button>
-  <button class="lbtn" onclick="setCategory('I', 'I12', '카페/커피점', this)">☕ 카페</button>
-  <button class="lbtn" onclick="setCategory('I', 'I01', '한식 식당', this)">🍚 한식</button>
-  <button class="lbtn" onclick="setCategory('R', '', '학원/교육', this)">📚 학원</button>
-  <button class="lbtn" onclick="setCategory('G', 'G02', '편의점', this)">🏪 편의점</button>
-  <button class="lbtn" onclick="setCategory('S', 'S01', '헤어/미용', this)">✂️ 미용실</button>
-</div>
+<div class="layer-bar" id="categoryFilter" style="display:none;"></div> 
 
 <div class="sheet sheet-peek" id="sheet">
   <div class="handle-wrap" id="handleWrap"><div class="handle"></div></div>
   <div class="full-area" id="fullArea"></div>
 </div>
 
-<div class="modal" id="reportModal">
-  <div class="modal-header">
-    <h1 id="rtitle" style="font-size:1.2rem; font-weight:900;">AI 정밀 상권 분석</h1>
-    <div class="close-btn" onclick="closeReport()">✕</div>
-  </div>
-  <div id="reportContent"></div>
-</div>
-
 <div class="loader" id="loader"><div class="lring"></div><div id="ltxt" style="font-size:.8rem; color:var(--dim); margin-top:10px;">데이터 수집 중...</div></div>
 <div class="toast" id="toast"><div id="thead" style="font-weight:700; color:var(--green); font-size:.7rem;">✓</div><div id="tmsg"></div></div>
 
 <script>
+// ── 상태 관리 ──
 let kakaoOk = false, map = null, sheetSt = 'peek', toastTm = null;
 let storeMarkers = [];
 let currentLoc = { lat: 37.5571, lng: 126.9245, name: '홍대입구', addr: '마포구 서교동', lawdCd: '11440' };
-let curLcls = '', curMcls = '', curName = '전체 상가';
 
-// 전역 리포트 데이터 캐시
+// 온보딩으로 수집된 사용자 니즈
+let userPrefs = { lcls: '', mcls: '', catName: '', budget: '', target: '' };
 let reportDataCache = { bizCount: 0, insight: {}, realEstateStr: "조회 중...", realEstateDesc: "" };
 
 const API_KEY = '1ddcc7f0063f3f004733b2651211cfe7ae0b11cc01f584205c1546bab1858c60';
 
-// ── 1. 카카오 위경도 -> 법정동 코드(LAWD_CD) 변환 ──
+// ── 온보딩 로직 ──
+function selectOpt(step, val1, val2, label, btn) {
+  // 선택 효과 UI 업데이트
+  const container = document.getElementById(`step${step}`);
+  container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  
+  // 다음 버튼 활성화
+  document.getElementById(`btn-next${step}`).classList.add('active');
+
+  // 데이터 저장
+  if(step === 1) { userPrefs.lcls = val1; userPrefs.mcls = val2; userPrefs.catName = label; }
+  if(step === 2) { userPrefs.budget = val1; }
+  if(step === 3) { userPrefs.target = val1; }
+}
+
+function nextStep(step) {
+  document.querySelectorAll('.step-container').forEach(c => c.classList.remove('active'));
+  document.getElementById(`step${step}`).classList.add('active');
+  document.getElementById(`p${step}`).classList.add('active');
+}
+
+function finishOnboarding() {
+  document.getElementById('onboarding').classList.add('hidden');
+  toast('사장님 맞춤 상권 탐색을 시작합니다!', '🚀 레이더 가동');
+  
+  // 카카오맵 강제 호출 (온보딩이 끝났으므로)
+  if(!kakaoOk) loadKakao();
+  else processLocation(currentLoc.lat, currentLoc.lng, currentLoc.name, currentLoc.addr);
+}
+
+// ── 데이터 Fetch 로직 (기존 유지) ──
 function getLawdCd(lng, lat) {
   return new Promise((resolve) => {
-    if(!kakaoOk) return resolve('11680'); // 폴백 (강남구)
+    if(!kakaoOk) return resolve('11680'); 
     const geocoder = new kakao.maps.services.Geocoder();
     geocoder.coord2RegionCode(lng, lat, (result, status) => {
-      if (status === kakao.maps.services.Status.OK) {
-        resolve(result[0].code.substring(0, 5)); // 법정동 코드 앞 5자리 (시군구)
-      } else { resolve('11680'); }
+      if (status === kakao.maps.services.Status.OK) resolve(result[0].code.substring(0, 5)); 
+      else resolve('11680'); 
     });
   });
 }
 
-// ── 2. 국토교통부 실거래가 API (CORS 우회 프록시 적용) ──
 async function fetchRealEstateData(lawdCd) {
-  const date = new Date(); date.setMonth(date.getMonth() - 2);
-  const dealYmd = date.getFullYear() + String(date.getMonth() + 1).padStart(2, '0');
-  
-  // 국토부 실제 엔드포인트
-  const targetUrl = `https://apis.data.go.kr/1613000/RTMSDataSvcNrgTrade/getRTMSDataSvcNrgTrade?serviceKey=${API_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}&numOfRows=50`;
+  for (let i = 1; i <= 3; i++) {
+    const date = new Date(); date.setMonth(date.getMonth() - i);
+    const dealYmd = date.getFullYear() + String(date.getMonth() + 1).padStart(2, '0');
+    const targetUrl = `https://apis.data.go.kr/1613000/RTMSDataSvcNrgTrade/getRTMSDataSvcNrgTrade?serviceKey=${API_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}&numOfRows=50`;
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
-  // ★ allorigins 프록시로 CORS 회피 ★
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+    try {
+      const res = await fetch(proxyUrl);
+      if (!res.ok) continue; 
+      const xmlText = await res.text();
+      if (xmlText.includes("SERVICE ERROR") || xmlText.includes("REGISTERED")) return "SYNC_DELAY";
 
-  try {
-    const res = await fetch(proxyUrl);
-    if (!res.ok) throw new Error("프록시 응답 에러");
-    
-    const xmlText = await res.text();
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-    const items = xmlDoc.querySelectorAll("item");
+      const parser = new DOMParser();
+      const items = parser.parseFromString(xmlText, "text/xml").querySelectorAll("item");
+      if(items.length === 0) continue; 
 
-    if(items.length === 0) return null;
+      let totalPrice = 0, totalArea = 0;
+      items.forEach(item => {
+        totalPrice += parseInt(item.querySelector("거래금액")?.textContent.replace(/,/g, '') || "0"); 
+        totalArea += parseFloat(item.querySelector("건물면적")?.textContent || "0"); 
+      });
 
-    let totalPrice = 0, totalArea = 0;
-    items.forEach(item => {
-      const priceStr = item.querySelector("거래금액")?.textContent.replace(/,/g, '') || "0";
-      const areaStr = item.querySelector("건물면적")?.textContent || "0";
-      totalPrice += parseInt(priceStr); // 만 원 단위
-      totalArea += parseFloat(areaStr); // 제곱미터
-    });
-
-    if(totalArea === 0) return null;
-    
-    // 평당 가격 계산 (1평 = 3.3058 제곱미터)
-    const pricePerSqm = totalPrice / totalArea;
-    const pricePerPyeong = Math.round((pricePerSqm * 3.3058) / 1000); // 천만 원 단위로 변환
-    
-    return pricePerPyeong;
-  } catch(e) {
-    console.warn("국토부 실거래가 프록시 조회 실패", e);
-    return null;
+      if(totalArea > 0) return Math.round(((totalPrice / totalArea) * 3.3058) / 1000);
+    } catch(e) { console.warn(`국토부 API 프록시 에러`, e); }
   }
+  return null; 
 }
 
-// ── 3. 소상공인 상가 API ──
-async function fetchBizData(lat, lng, lcls, mcls) {
+async function fetchBizData(lat, lng) {
   let url = `https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInRadius?serviceKey=${API_KEY}&radius=500&cx=${lng}&cy=${lat}&type=json&numOfRows=100`;
-  if(lcls) url += `&indsLclsCd=${lcls}`;
-  if(mcls) url += `&indsMclsCd=${mcls}`;
-
+  if(userPrefs.lcls) url += `&indsLclsCd=${userPrefs.lcls}`;
+  if(userPrefs.mcls) url += `&indsMclsCd=${userPrefs.mcls}`;
   try {
     const res = await fetch(url);
     const data = await res.json();
@@ -177,28 +239,25 @@ async function fetchBizData(lat, lng, lcls, mcls) {
   } catch(e) { return null; }
 }
 
-// ── 핵심 병렬 처리 로직 ──
+// ── 핵심 분석 및 렌더링 로직 ──
 async function processLocation(lat, lng, name, addr) {
   currentLoc = { lat: parseFloat(lat), lng: parseFloat(lng), name, addr };
   
-  if(kakaoOk) {
+  if(kakaoOk && map) {
     map.setCenter(new kakao.maps.LatLng(lat, lng));
     drawCircle(lat, lng);
     storeMarkers.forEach(m => m.setMap(null)); storeMarkers = [];
   }
 
   load(1800, async () => {
-    // 1. 위경도를 법정동 코드로 변환
     const lawdCd = await getLawdCd(lng, lat);
     currentLoc.lawdCd = lawdCd;
 
-    // 2. 상가 API와 국토부 프록시 API 동시 호출
     const [bizData, realEstatePrice] = await Promise.all([
-      fetchBizData(lat, lng, curLcls, curMcls),
+      fetchBizData(lat, lng),
       fetchRealEstateData(lawdCd)
     ]);
 
-    // 상가 데이터 처리
     reportDataCache.bizCount = bizData ? bizData.length : 0;
     if(bizData && kakaoOk) {
       bizData.forEach(shop => {
@@ -207,100 +266,66 @@ async function processLocation(lat, lng, name, addr) {
       });
     }
 
-    // 국토부 시세 데이터 처리
-    if(realEstatePrice) {
+    if(realEstatePrice === "SYNC_DELAY") {
+      reportDataCache.realEstateStr = "연동 대기 중";
+      reportDataCache.realEstateDesc = "공공데이터 승인 반영 중입니다.";
+    } else if(realEstatePrice) {
       reportDataCache.realEstateStr = `${realEstatePrice.toLocaleString()}천만 원`;
       reportDataCache.realEstateDesc = `국토교통부 실거래가 평균 (${lawdCd.substring(0,5)} 기준)`;
     } else {
-      reportDataCache.realEstateStr = "시세 분석 불가";
-      reportDataCache.realEstateDesc = "해당 지역 최근 실거래 데이터가 부족합니다.";
+      reportDataCache.realEstateStr = "거래 내역 없음";
+      reportDataCache.realEstateDesc = "최근 3개월 내 해당 지역 상가 매매가 없습니다.";
     }
 
-    reportDataCache.insight = generateInsight(reportDataCache.bizCount, curName);
+    // 온보딩 데이터를 바탕으로 한 인사이트 생성
+    reportDataCache.insight = generateInsight(reportDataCache.bizCount, userPrefs.catName, userPrefs.budget);
     
     renderSheet(name, addr, reportDataCache.bizCount, reportDataCache.insight);
-    setSt('full');
-    toast(`공공데이터 융합 분석 완료`);
+    setSt('half'); // 온보딩 후에는 시트가 자동으로 반쯤 올라오게 설정
   });
 }
 
-function generateInsight(count, category) {
-  let risk = count > 30 ? '🔴 고위험' : count > 10 ? '🟡 보통' : '🟢 유망';
-  let desc = count > 30 ? `해당 반경에 <b>${category}</b> 점포가 포화 상태입니다. 출혈 경쟁이 우려됩니다.` : 
-             count > 10 ? `수요와 공급이 균형을 이룹니다. 타겟층(배후 아파트 등) 분석 후 진입하세요.` :
-             `동일 업종이 적어 <b>블루오션</b> 가능성이 있습니다. 선점 효과를 노려볼 만합니다.`;
+function generateInsight(count, category, budget) {
+  let risk = count > 30 ? '🔴 고위험' : count > 10 ? '🟡 보통' : '🟢 추천';
+  let desc = count > 30 ? `현재 <b>${category}</b> 업종이 초밀집된 구역입니다. 예산 측면에서 권리금과 임대료 경쟁이 매우 치열할 것으로 예상됩니다.` : 
+             `점포 밀집도가 적절하며, 설정하신 타겟층 유입을 기대할 수 있는 상권입니다. 세부 매물 탐색을 권장합니다.`;
   return { risk, desc, score: Math.max(100 - count*2, 40) };
 }
 
-// ── 상세 리포트 모달 열기 ──
-function openReport() {
-  const modal = document.getElementById('reportModal');
-  const content = document.getElementById('reportContent');
-  
-  // 매출/타겟 시뮬레이션
-  const salesData = [3200, 3400, 3100, 3800, 4200, 4500];
-  const targetAge = {'20대': 42, '30대': 28, '40대': 15, '기타': 15};
-  
-  content.innerHTML = `
-    <div class="report-sec">
-      <div class="report-t">🏢 상업업무용 상가 시세 동향 (1평 기준)</div>
-      <div style="background:var(--card2); padding:16px; border-radius:12px; border:1px solid var(--border);">
-        <div style="font-size:0.65rem; color:var(--dim); margin-bottom:6px;">평당 매매가 평균</div>
-        <div style="font-size:1.6rem; font-weight:900; color:var(--cyan); margin-bottom:4px;">${reportDataCache.realEstateStr}</div>
-        <div style="font-size:0.65rem; color:var(--dim);">${reportDataCache.realEstateDesc}</div>
-      </div>
-      <p style="font-size:0.65rem; color:var(--dim); margin-top:12px; text-align:right;">* 출처: 국토교통부 OpenAPI</p>
-    </div>
-
-    <div class="report-sec">
-      <div class="report-t">📈 매출 성장성 추이</div>
-      <div style="font-size:1.5rem; font-weight:900; color:var(--green); margin-bottom:5px;">월 평균 ${(salesData[5]).toLocaleString()}만 원</div>
-      <div style="display:flex; gap:4px; height:60px; align-items:flex-end; margin-top:20px;">
-        ${salesData.map(v => `<div style="flex:1; background:var(--border); height:${(v/5000)*100}%; border-radius:4px 4px 0 0;"></div>`).join('')}
-      </div>
-    </div>
-
-    <div class="report-sec" style="background:rgba(255, 71, 87, 0.05); border-color:rgba(255, 71, 87, 0.2);">
-      <div class="report-t" style="color:var(--red);">⚠️ 주의사항</div>
-      <p style="font-size:0.8rem; line-height:1.5;">최근 상가 매매가가 지역 평균 대비 가파르게 상승하거나 변동성이 클 수 있습니다. 위 국토부 평균 매매가를 참고하여 수익률을 보수적으로 산정하세요.</p>
-    </div>
-  `;
-  modal.classList.add('show');
-}
-
-function closeReport() { document.getElementById('reportModal').classList.remove('show'); }
-
-// ── UI 렌더링 ──
 function renderSheet(name, addr, count, insight) {
   document.getElementById('fullArea').innerHTML = `
     <div style="margin-bottom:16px;">
-      <h2 style="font-size:1.1rem; font-weight:900;">${name} 상권</h2>
+      <h2 style="font-size:1.1rem; font-weight:900;">${name} 상권 진단</h2>
       <p style="color:var(--dim); font-size:0.7rem;">${addr}</p>
     </div>
     
     <div class="insight-box">
-      <div style="font-size:0.65rem; color:var(--cyan); font-weight:900; margin-bottom:6px;">AI 상권 분석 요약</div>
+      <div style="font-size:0.65rem; color:var(--cyan); font-weight:900; margin-bottom:6px;">맞춤 분석 요약</div>
       <div style="font-size:0.9rem; font-weight:800; margin-bottom:6px;">${insight.risk} 입지</div>
       <p style="font-size:0.8rem; line-height:1.5; color:var(--text);">${insight.desc}</p>
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
-      <div class="mc"><div class="mc-l">${curName} 수</div><div class="mc-v">${count}개</div></div>
-      <div class="mc"><div class="mc-l">입지 점수</div><div class="mc-v" style="color:var(--green)">${insight.score}점</div></div>
+      <div class="mc"><div class="mc-l">반경 내 ${userPrefs.catName}</div><div class="mc-v">${count}개</div></div>
+      <div class="mc"><div class="mc-l">평당 매매가 (평균)</div><div class="mc-v" style="color:var(--yellow); font-size:1rem;">${reportDataCache.realEstateStr}</div></div>
     </div>
 
-    <button style="width:100%; padding:16px; background:var(--cyan); color:#000; border:none; border-radius:14px; font-weight:900; font-size:0.9rem; cursor:pointer;" onclick="openReport()">
-      📄 AI 상세 분석 리포트 보기
+    <button style="width:100%; padding:16px; background:var(--cyan); color:#000; border:none; border-radius:14px; font-weight:900; font-size:0.9rem; cursor:pointer;" onclick="toast('추정 손익 시뮬레이터를 준비 중입니다.')">
+      💰 목표 수익률(ROI) 계산기 열기
     </button>
   `;
 }
 
-// ── 지도 및 업종 선택 ──
-function setCategory(lcls, mcls, name, btn) {
-  document.querySelectorAll('.lbtn').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-  curLcls = lcls; curMcls = mcls; curName = name;
-  processLocation(currentLoc.lat, currentLoc.lng, currentLoc.name, currentLoc.addr);
+// ── 지도 및 초기화 ──
+function loadKakao() {
+  const sc = document.createElement('script');
+  sc.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${window.KAKAO_JS_KEY}&libraries=services&autoload=false`;
+  sc.onload = () => kakao.maps.load(() => { 
+    kakaoOk = true; 
+    initKakao(); 
+    processLocation(currentLoc.lat, currentLoc.lng, currentLoc.name, currentLoc.addr);
+  });
+  document.head.appendChild(sc);
 }
 
 function initKakao() {
@@ -313,7 +338,6 @@ function initKakao() {
       if(st === kakao.maps.services.Status.OK) processLocation(data[0].y, data[0].x, data[0].place_name, data[0].address_name);
     });
   };
-  processLocation(currentLoc.lat, currentLoc.lng, currentLoc.name, currentLoc.addr);
 }
 
 function drawCircle(lat, lng) {
@@ -321,13 +345,6 @@ function drawCircle(lat, lng) {
   window._c = new kakao.maps.Circle({ map, center: new kakao.maps.LatLng(lat,lng), radius:500, strokeWeight:2, strokeColor:'#00e5ff', strokeStyle:'dashed', fillColor:'#00e5ff', fillOpacity:0.05 });
 }
 
-// ── 공통 헬퍼 ──
-function loadKakao() {
-  const sc = document.createElement('script');
-  sc.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${window.KAKAO_JS_KEY}&libraries=services&autoload=false`;
-  sc.onload = () => kakao.maps.load(() => { kakaoOk = true; initKakao(); });
-  document.head.appendChild(sc);
-}
 function load(ms, cb) {
   const el = document.getElementById('loader'); el.classList.add('show');
   setTimeout(async () => { await cb(); el.classList.remove('show'); }, ms);
@@ -335,9 +352,7 @@ function load(ms, cb) {
 function setSt(s) { sheetSt = s; document.getElementById('sheet').className = `sheet sheet-${s}`; }
 function toast(m) { const t = document.getElementById('toast'); document.getElementById('tmsg').textContent = m; t.classList.add('show'); clearTimeout(toastTm); toastTm = setTimeout(() => t.classList.remove('show'), 2000); }
 
-// ── 초기화 ──
 document.getElementById('handleWrap').onclick = () => setSt(sheetSt==='peek'?'half':sheetSt==='half'?'full':'peek');
-window.onload = loadKakao;
 </script>
 </body>
 </html>
