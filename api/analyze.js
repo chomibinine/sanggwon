@@ -13,14 +13,14 @@ export default async function handler(req, res) {
       bizCount = bizJson.body && bizJson.body.items ? bizJson.body.items.length : 0;
     }
 
-    // 2. 국토부 실거래가 3년(36개월) 싹쓸이 탐색 (Vercel 타임아웃 방지용 병렬 청크 처리)
+    // 2. 국토부 실거래가 3년(36개월) 싹쓸이 탐색 및 원본 데이터 보존
     let realEstatePyeongPrice = 0;
     let isRealData = false;
+    let totalTradeCount = 0; // 총 거래 건수
+    let sumTradePrice = 0;   // 총 거래 금액 누적
+    let sumArea = 0;         // 총 거래 면적 누적
 
-    // 6개월씩 6번(총 36개월) 탐색. 과거 데이터를 찾으면 즉시 중단하여 서버 부하 방지
     for (let chunk = 0; chunk < 6; chunk++) {
-      if (isRealData) break; 
-      
       const promises = [];
       for (let i = 1; i <= 6; i++) {
         const monthsAgo = chunk * 6 + i;
@@ -39,31 +39,40 @@ export default async function handler(req, res) {
         const areas = [...xmlText.matchAll(/<건물면적>(.*?)<\/건물면적>/g)].map(m => parseFloat(m[1].trim()));
 
         if (prices.length > 0 && areas.length > 0) {
-          let totalPrice = 0, totalArea = 0;
           const len = Math.min(prices.length, areas.length);
-          for(let j=0; j < len; j++) { totalPrice += prices[j]; totalArea += areas[j]; }
-          if (totalArea > 0) {
-            realEstatePyeongPrice = Math.round((totalPrice / totalArea) * 3.3058);
-            isRealData = true;
-            break; 
+          for(let j=0; j < len; j++) { 
+            sumTradePrice += prices[j]; 
+            sumArea += areas[j]; 
+            totalTradeCount++;
           }
         }
       }
+      // 6개월 단위 탐색 중 데이터를 충분히 찾았다면(예: 3건 이상) 부하 방지를 위해 조기 종료
+      if (totalTradeCount >= 3) break; 
     }
 
-    // 3년(36개월)을 다 뒤져도 없으면 폴백
-    if (!isRealData) realEstatePyeongPrice = 4500; 
+    // 통계 산출
+    let avgArea = 0;
+    let avgTradePrice = 0;
+
+    if (totalTradeCount > 0 && sumArea > 0) {
+      realEstatePyeongPrice = Math.round((sumTradePrice / sumArea) * 3.3058);
+      avgArea = Math.round(sumArea / totalTradeCount);
+      avgTradePrice = Math.round(sumTradePrice / totalTradeCount);
+      isRealData = true;
+    } else {
+      realEstatePyeongPrice = 4500; // 폴백 시세
+    }
 
     // 3. 생존 지표 계산
     const pyeong = 15;
     const monthlyRent = Math.round(((realEstatePyeongPrice * pyeong) * 0.05) / 12);
     const targetSales = monthlyRent * 10;
     
-    // 업종별 대략적인 객단가 매핑
     let unitPrice = 10000;
     if (lcls === 'I' && mcls === 'I12') unitPrice = 4500; // 카페
-    else if (lcls === 'I' && (mcls === 'I05' || mcls === 'I06')) unitPrice = 18000; // 치킨/패스트푸드
-    else if (lcls === 'S' || lcls === 'P') unitPrice = 50000; // 미용실, 헬스장 등
+    else if (lcls === 'I' && (mcls === 'I05' || mcls === 'I06')) unitPrice = 18000; // 치킨
+    else if (lcls === 'S' || lcls === 'P') unitPrice = 50000; // 미용/헬스
     
     const customersNeededPerDay = Math.ceil((targetSales * 10000) / unitPrice / 30);
 
@@ -79,27 +88,31 @@ export default async function handler(req, res) {
     let actionItems = [];
 
     if (!isRealData) {
-      summary = "최근 3년 내 매매 내역이 없어 주변 평균가로 보정 분석했습니다.";
-      actionItems.push("⚠️ 3년 넘게 상가 매매 거래가 없는 고인 상권이거나, 신도시일 수 있습니다.");
+      summary = "최근 3년 내 매매 내역이 없는 구역입니다.";
+      actionItems.push("⚠️ 3년 넘게 상가 매매 거래가 없는 고인 상권이거나 신도시입니다. 권리금이 비정상적일 수 있습니다.");
     } else if (bizCount > 20) {
-      summary = `반경 내 동일 업종이 ${bizCount}개나 포진한 초경쟁 구역입니다.`;
-      actionItems.push(`🔥 기존 ${bizCount}개 매장과 파이를 나눠 먹어야 합니다. 명확한 컨셉 차별화가 필수입니다.`);
+      summary = `반경 내 ${bizCount}개의 매장이 피 터지게 싸우는 '초경쟁 구역'입니다.`;
+      actionItems.push(`🔥 기존 매장과 파이를 나눠 먹어야 합니다. '확실한 미끼 상품' 없이는 진입하지 마세요.`);
     } else {
-      summary = `경쟁 강도가 비교적 양호한 구역입니다. 배후 수요를 점검하세요.`;
-      actionItems.push(`💡 주변에 대단지 아파트나 오피스 상주 인구가 충분한지 확인하세요.`);
+      summary = `경쟁 강도는 무난합니다. 이제 '배후 수요'와 '임대료' 싸움입니다.`;
+      actionItems.push(`💡 주변에 대단지 아파트나 오피스 상주 인구가 귀하의 타겟과 일치하는지 임장을 통해 확인하세요.`);
     }
 
-    actionItems.push(`💰 적자를 면하려면 매월 최소 <b>${targetSales.toLocaleString()}만 원</b>의 매출을 올려야 합니다.`);
-    actionItems.push(`👥 객단가 ${unitPrice.toLocaleString()}원 기준, 하루 평균 <b>${customersNeededPerDay}명</b>의 결제가 필요합니다.`);
+    actionItems.push(`💰 적자를 면하려면 이 월세 구조에서는 매월 최소 <b>${targetSales.toLocaleString()}만 원</b>을 팔아야 합니다.`);
+    actionItems.push(`👥 객단가 ${unitPrice.toLocaleString()}원 기준, 하루 평균 <b>${customersNeededPerDay}명</b>이 무조건 카드를 긁어야 생존합니다.`);
 
     const totalEstimatedCost = (monthlyRent * 12) + (pyeong * 200);
     if (parseInt(budget) < totalEstimatedCost) {
-      actionItems.push(`🚨 입력하신 예산(${parseInt(budget).toLocaleString()}만 원)으로는 평균 초기 비용 감당이 위험합니다.`);
+      actionItems.push(`🚨 사장님의 예산(${parseInt(budget).toLocaleString()}만 원)으로는 평균 초기 비용(약 ${totalEstimatedCost.toLocaleString()}만 원) 감당이 벅찹니다. 이면도로 매물을 찾으세요.`);
     }
 
     res.status(200).json({
       success: true,
-      data: { isRealData: true, bizCount, realEstatePyeongPrice, monthlyRent, targetSales, customersNeededPerDay, unitPrice, score: finalScore, analysis: { summary, actionItems } }
+      data: { 
+        isRealData, bizCount, realEstatePyeongPrice, monthlyRent, targetSales, customersNeededPerDay, unitPrice, score: finalScore,
+        raw: { totalTradeCount, avgArea, avgTradePrice }, // 원본 데이터 추가
+        analysis: { summary, actionItems } 
+      }
     });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
