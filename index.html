@@ -231,7 +231,12 @@ async function fetchAll(lat, lng) {
       return { bizCount: json.data.bizCount, isRealData: json.data.isRealData };
     } else throw new Error("API Error");
   } catch (e) { 
-    analysisData = { bizCount:0, monthlyRent:0, targetSales:0, customersNeededPerDay:0, unitPrice: 0, score:0, isRealData: false, raw: {totalTradeCount:0, avgArea:0, avgTradePrice:0}, analysis:{ summary:"서버 연동 지연", actionItems:["Vercel 서버 연결을 확인해주세요."] } };
+    // Vercel 연동 실패 혹은 데이터 구조 변경 시 프론트가 뻗지 않도록 방어 코드 추가
+    analysisData = { 
+      bizCount: 0, monthlyRent: 0, targetSales: 0, customersNeededPerDay: 0, unitPrice: 0, score: 0, isRealData: false, 
+      raw: { totalTradeCount: 0, avgArea: 0, avgTradePrice: 0 }, 
+      analysis: { summary: "서버 연동 오류", actionItems: ["일시적인 네트워크 오류입니다. 다시 시도해주세요."] } 
+    };
     return { bizCount: 0, isRealData: false }; 
   }
 }
@@ -244,87 +249,97 @@ async function processLocation(lat, lng, name, addr) {
     const result = await fetchAll(lat, lng);
     renderSheet(name, addr, result.bizCount, result.isRealData);
     setSt('half');
-    toast(`데이터 분석 완료`);
+    toast(`데이터 스캔 완료`);
   });
 }
 
-// ── 리포트 렌더링 (순서 재배치 적용) ──
+// ── 리포트 렌더링 (에러 방어 및 순서 재배치) ──
 function openReport() {
   if (!analysisData) return;
-  const modal = document.getElementById('reportModal');
-  const content = document.getElementById('reportContent');
-  const d = analysisData; 
+  
+  try {
+    const modal = document.getElementById('reportModal');
+    const content = document.getElementById('reportContent');
+    const d = analysisData; 
+    
+    // 방어 코드: d.raw나 d.analysis가 없더라도 터지지 않도록 기본값 할당
+    const raw = d.raw || { totalTradeCount: 0, avgArea: 0, avgTradePrice: 0 };
+    const analysis = d.analysis || { summary: "데이터 분석 중 문제가 발생했습니다.", actionItems: ["재시도 해주세요."] };
 
-  // 1. 공공데이터 원본 블록
-  const rawDataBlock = d.isRealData ? `
-    <div class="data-row">
-      <span class="data-lbl">최근 3년 누적 거래 건수</span>
-      <span class="data-val">${d.raw.totalTradeCount}건 발견</span>
-    </div>
-    <div class="data-row">
-      <span class="data-lbl">거래 상가 평균 전용면적</span>
-      <span class="data-val">${d.raw.avgArea} ㎡ (약 ${Math.round(d.raw.avgArea / 3.3)}평)</span>
-    </div>
-    <div class="data-row" style="margin-bottom:0;">
-      <span class="data-lbl">평균 매매 총액</span>
-      <span class="data-val">${d.raw.avgTradePrice.toLocaleString()}만 원</span>
-    </div>
-  ` : `
-    <div style="background:rgba(255,71,87,0.1); border:1px solid rgba(255,71,87,0.3); padding:16px; border-radius:12px; text-align:center;">
-      <div style="color:var(--red); font-weight:900; margin-bottom:6px;">최근 3년 상업용 실거래 데이터 없음</div>
-      <div style="font-size:0.8rem; color:var(--text); line-height:1.4;">거래가 멈춰있는 상권이거나 신규 택지지구일 수 있습니다.</div>
-    </div>
-  `;
-
-  content.innerHTML = `
-    <div class="report-sec">
-      <div class="report-t">📊 공공데이터 원본 요약</div>
-      <div class="data-row" style="border-bottom:1px dashed var(--border); padding-bottom:12px;">
-        <span class="data-lbl">반경 500m 내 [${userPrefs.catName}] 매장 수</span>
-        <span class="data-val" style="color:var(--cyan); font-size:1rem;">총 ${d.bizCount}개 점포</span>
-      </div>
-      ${rawDataBlock}
-    </div>
-
-    <div class="report-sec" style="border-color:var(--cyan);">
-      <div class="report-t" style="color:var(--cyan);">🏢 현실적 비용 및 생존 마지노선</div>
+    // 1. 공공데이터 원본 블록
+    const rawDataBlock = d.isRealData ? `
       <div class="data-row">
-        <span class="data-lbl">평당 매매가 환산 시세</span>
-        <span class="data-val">${d.realEstatePyeongPrice.toLocaleString()}만 원 / 평</span>
+        <span class="data-lbl">최근 3년 누적 거래 건수</span>
+        <span class="data-val">${raw.totalTradeCount}건 발견</span>
       </div>
-      <div style="background:rgba(255,191,36,0.1); padding:16px; border-radius:12px; text-align:center; margin-bottom:16px;">
-        <div style="font-size:0.75rem; color:var(--yellow); font-weight:700; margin-bottom:6px;">15평 기준 추정 임대료 (건물수익률 5%)</div>
-        <div class="data-highlight">월 ${d.monthlyRent.toLocaleString()}만 원</div>
-      </div>
-      <p style="font-size:0.8rem; color:var(--dim); line-height:1.5; margin-bottom:16px;">
-        임대료가 전체 매출의 10%를 넘지 않아야 사업이 유지됩니다.
-      </p>
       <div class="data-row">
-        <span class="data-lbl">숨만 쉬어도 필요한 최소 매출</span>
-        <span class="data-val" style="color:var(--cyan); font-weight:900; font-size:1.1rem;">${d.targetSales.toLocaleString()}만 원</span>
+        <span class="data-lbl">거래 상가 평균 전용면적</span>
+        <span class="data-val">${raw.avgArea} ㎡ (약 ${Math.round((raw.avgArea || 0) / 3.3)}평)</span>
       </div>
-      <div style="background:var(--card2); padding:16px; border-radius:8px; margin-top:10px;">
-        <span style="font-size:0.8rem; color:var(--text);">☕ 적자를 피하려면 하루에 무조건 <b>${d.customersNeededPerDay}명</b>(객단가 ${d.unitPrice.toLocaleString()}원)의 손님을 받아야 합니다.</span>
+      <div class="data-row" style="margin-bottom:0;">
+        <span class="data-lbl">평균 매매 총액</span>
+        <span class="data-val">${(raw.avgTradePrice || 0).toLocaleString()}만 원</span>
       </div>
-    </div>
+    ` : `
+      <div style="background:rgba(255,71,87,0.1); border:1px solid rgba(255,71,87,0.3); padding:16px; border-radius:12px; text-align:center;">
+        <div style="color:var(--red); font-weight:900; margin-bottom:6px;">최근 3년 상업용 실거래 데이터 없음</div>
+        <div style="font-size:0.8rem; color:var(--text); line-height:1.4;">매매 거래가 멈춰있는 상권이거나 신규 택지지구일 수 있습니다.</div>
+      </div>
+    `;
 
-    <div class="report-sec" style="background:var(--cyan); color:#000;">
-      <div style="font-size:0.8rem; font-weight:900; margin-bottom:8px; opacity:0.8;">🤖 AI 최종 분석 결론</div>
-      <div style="font-size:1.1rem; font-weight:900; line-height:1.4; margin-bottom:12px;">"${d.analysis.summary}"</div>
-      <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.1); padding:10px 14px; border-radius:8px;">
-        <span style="font-weight:700;">AI 종합 매력도 점수</span>
-        <span style="font-size:1.4rem; font-weight:900;">${d.score}점</span>
+    content.innerHTML = `
+      <div class="report-sec">
+        <div class="report-t">📊 공공데이터 원본 요약</div>
+        <div class="data-row" style="border-bottom:1px dashed var(--border); padding-bottom:12px;">
+          <span class="data-lbl">반경 500m 내 [${userPrefs.catName}] 매장 수</span>
+          <span class="data-val" style="color:var(--cyan); font-size:1rem;">총 ${d.bizCount || 0}개 점포</span>
+        </div>
+        ${rawDataBlock}
       </div>
-    </div>
 
-    <div class="report-sec" style="border-color:var(--yellow);">
-      <div class="report-t" style="color:var(--yellow);">💡 사장님을 위한 팩트 기반 행동 지침</div>
-      <ul style="padding-left:20px; font-size:0.85rem; line-height:1.7; color:var(--text);">
-        ${d.analysis.actionItems.map(item => `<li style="margin-bottom:10px;">${item}</li>`).join('')}
-      </ul>
-    </div>
-  `;
-  modal.classList.add('show');
+      <div class="report-sec" style="border-color:var(--cyan);">
+        <div class="report-t" style="color:var(--cyan);">🏢 현실적 비용 및 생존 마지노선</div>
+        <div class="data-row">
+          <span class="data-lbl">평당 매매가 환산 시세</span>
+          <span class="data-val">${(d.realEstatePyeongPrice || 0).toLocaleString()}만 원 / 평</span>
+        </div>
+        <div style="background:rgba(255,191,36,0.1); padding:16px; border-radius:12px; text-align:center; margin-bottom:16px;">
+          <div style="font-size:0.75rem; color:var(--yellow); font-weight:700; margin-bottom:6px;">15평 기준 추정 임대료 (건물수익률 5%)</div>
+          <div class="data-highlight">월 ${(d.monthlyRent || 0).toLocaleString()}만 원</div>
+        </div>
+        <p style="font-size:0.8rem; color:var(--dim); line-height:1.5; margin-bottom:16px;">
+          임대료가 전체 매출의 10%를 넘지 않아야 사업이 유지됩니다.
+        </p>
+        <div class="data-row">
+          <span class="data-lbl">숨만 쉬어도 필요한 최소 매출</span>
+          <span class="data-val" style="color:var(--cyan); font-weight:900; font-size:1.1rem;">${(d.targetSales || 0).toLocaleString()}만 원</span>
+        </div>
+        <div style="background:var(--card2); padding:16px; border-radius:8px; margin-top:10px;">
+          <span style="font-size:0.8rem; color:var(--text);">☕ 적자를 피하려면 하루에 무조건 <b>${d.customersNeededPerDay || 0}명</b>(객단가 ${(d.unitPrice || 0).toLocaleString()}원)의 손님을 받아야 합니다.</span>
+        </div>
+      </div>
+
+      <div class="report-sec" style="background:var(--cyan); color:#000;">
+        <div style="font-size:0.8rem; font-weight:900; margin-bottom:8px; opacity:0.8;">🤖 AI 최종 분석 결론</div>
+        <div style="font-size:1.1rem; font-weight:900; line-height:1.4; margin-bottom:12px;">"${analysis.summary}"</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.1); padding:10px 14px; border-radius:8px;">
+          <span style="font-weight:700;">AI 종합 매력도 점수</span>
+          <span style="font-size:1.4rem; font-weight:900;">${d.score || 0}점</span>
+        </div>
+      </div>
+
+      <div class="report-sec" style="border-color:var(--yellow);">
+        <div class="report-t" style="color:var(--yellow);">💡 사장님을 위한 팩트 기반 행동 지침</div>
+        <ul style="padding-left:20px; font-size:0.85rem; line-height:1.7; color:var(--text);">
+          ${(analysis.actionItems || []).map(item => `<li style="margin-bottom:10px;">${item}</li>`).join('')}
+        </ul>
+      </div>
+    `;
+    modal.classList.add('show');
+  } catch (error) {
+    console.error("리포트 렌더링 에러:", error);
+    alert("리포트를 여는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+  }
 }
 
 function renderSheet(name, addr, bizCount, isRealData) {
