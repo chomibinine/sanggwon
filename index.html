@@ -34,7 +34,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 .opt-btn { background:var(--bg); border:1px solid var(--border); padding:14px 12px; border-radius:10px; font-size:0.85rem; color:var(--dim); font-weight:700; cursor:pointer; text-align:center; transition:all 0.2s; position:relative; }
 .opt-btn.sel { border-color:var(--cyan); background:rgba(0,229,255,.08); color:var(--text); box-shadow:0 4px 12px rgba(0,229,255,.1); }
 .opt-btn.sel::after { content:'✓'; position:absolute; top:6px; right:8px; color:var(--cyan); font-weight:900; font-size:0.75rem; }
-.action-btn { background:var(--cyan); color:#000; padding:16px; border:none; border-radius:12px; font-weight:900; font-size:1rem; cursor:pointer; margin-top:auto; width:100%; transition:opacity 0.2s; opacity:0.5; pointer-events:none; }
+.action-btn { background:var(--cyan); color:#000; padding:16px; border:none; border-radius:12px; font-weight:900; font-size:1rem; cursor:pointer; margin-top:auto; width:100%; transition:opacity 0.2s; opacity:0.5; pointer-events:none; flex-shrink:0; }
 .action-btn.active { opacity:1; pointer-events:all; }
 
 /* ── 메인 UI ── */
@@ -63,7 +63,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 .report-t { font-size:0.95rem; font-weight:900; margin-bottom:15px; color:var(--cyan); display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border); padding-bottom:10px; }
 .data-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:0.85rem; }
 .data-lbl { color:var(--dim); }
-.data-val { font-weight:700; color:var(--text); }
+.data-val { font-weight:700; color:var(--text); text-align:right; }
 .data-highlight { font-size:1.2rem; font-weight:900; color:var(--yellow); }
 
 .loader { position:fixed; inset:0; background:rgba(7,9,15,.85); z-index:500; display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .22s; }
@@ -133,16 +133,20 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
   </div>
 
   <div class="step-container" id="step4">
-    <div class="step-title">탐색할 핵심 지역을<br>선택해 주세요.</div>
-    <div class="narrative">"선택하신 지역의 반경 500m 내 3년 치 실거래가를 스캔하여 분석합니다."</div>
+    <div class="step-title">주로 탐색할<br>지역을 골라주세요.</div>
+    <div class="narrative">"전국 어디든 가능합니다. 대략적인 지역을 선택하시면 상세 위치는 지도에서 바로 검색할 수 있습니다."</div>
+    <div class="opt-grid">
+      <div class="opt-btn" onclick="selectOpt(4, 'SEOUL', '', '서울', this)">🏢 서울특별시</div>
+      <div class="opt-btn" onclick="selectOpt(4, 'GYEONGGI', '', '경기', this)">🏡 경기도 (수원 기준)</div>
+      <div class="opt-btn" onclick="selectOpt(4, 'INCHEON', '', '인천', this)">✈️ 인천광역시</div>
+      <div class="opt-btn" onclick="selectOpt(4, 'BUSAN', '', '부산', this)">🌊 부산광역시</div>
+      <div class="opt-btn" onclick="selectOpt(4, 'DAEGU', '', '대구', this)">🍎 대구광역시</div>
+      <div class="opt-btn" onclick="selectOpt(4, 'DAEJEON', '', '대전', this)">🍞 대전광역시</div>
+      <div class="opt-btn" onclick="selectOpt(4, 'GWANGJU', '', '광주', this)">🌶️ 광주광역시</div>
+      <div class="opt-btn" onclick="selectOpt(4, 'SEJONG', '', '세종', this)">🌳 세종특별자치시</div>
+    </div>
     <div class="opt-grid" style="grid-template-columns:1fr;">
-      <div class="opt-btn" onclick="selectOpt(4, 'S_GANGNAM', '', '서울 강남', this)">🏢 [서울] 강남역/역삼 일대</div>
-      <div class="opt-btn" onclick="selectOpt(4, 'S_HONGDAE', '', '서울 홍대', this)">🎸 [서울] 홍대입구/합정 일대</div>
-      <div class="opt-btn" onclick="selectOpt(4, 'S_SEONGSU', '', '서울 성수', this)">☕ [서울] 성수동 카페거리 일대</div>
-      <div class="opt-btn" onclick="selectOpt(4, 'G_BUNDANG', '', '경기 분당', this)">🏞️ [경기] 분당 서현/정자 일대</div>
-      <div class="opt-btn" onclick="selectOpt(4, 'SEJONG', '', '세종 도담', this)">🌳 [충청] 세종시 도담/나성 일대</div>
-      <div class="opt-btn" onclick="selectOpt(4, 'B_SEOMYEON', '', '부산 서면', this)">🌊 [부산] 서면/전포 일대</div>
-      <div class="opt-btn" onclick="selectOpt(4, 'CUSTOM', '', '지도 직접 검색', this)">📍 지도에서 직접 검색하기</div>
+      <div class="opt-btn" style="border-color:var(--cyan); color:var(--cyan);" onclick="selectOpt(4, 'CUSTOM', '', '지도 직접 검색', this)">📍 그 외 지역 (지도에서 직접 검색할게요)</div>
     </div>
     <button class="action-btn" id="btn-next4" onclick="finishOnboarding()">3년치 데이터 분석 스캔 시작</button>
   </div>
@@ -150,7 +154,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 
 <div class="topnav">
   <div class="logo"><div class="logo-dot"></div>상권레이더</div>
-  <div class="search-bar"><input type="text" id="searchInput" placeholder="다른 지역 검색..."></div>
+  <div class="search-bar"><input type="text" id="searchInput" placeholder="동, 구, 시 이름으로 검색..."></div>
 </div>
 <div id="kakaoMap"></div>
 <div class="sheet" id="sheet">
@@ -173,7 +177,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 let kakaoOk = false, map = null, sheetSt = 'peek', toastTm = null;
 let storeMarkers = [];
 let userPrefs = { lcls: '', mcls: '', catName: '', budget: 0, target: '', region: '' };
-let currentLoc = { lat: 37.4979, lng: 127.0276, name: '강남역', addr: '서울 강남구 역삼동' };
+let currentLoc = { lat: 37.5665, lng: 126.9780, name: '서울시청', addr: '서울 중구 태평로1가' };
 let analysisData = null;
 
 function selectOpt(step, val1, val2, label, btn) {
@@ -196,13 +200,15 @@ function finishOnboarding(){
   document.getElementById('onboarding').classList.add('hidden');
   
   const regions = {
-    'S_GANGNAM': {lat:37.4979, lng:127.0276, name:'강남역', addr:'서울 강남구 역삼동'},
-    'S_HONGDAE': {lat:37.5571, lng:126.9245, name:'홍대입구', addr:'서울 마포구 서교동'},
-    'S_SEONGSU': {lat:37.5445, lng:127.0560, name:'성수동', addr:'서울 성동구 성수동'},
-    'G_BUNDANG': {lat:37.3828, lng:127.1189, name:'서현역', addr:'경기 성남시 분당구 서현동'},
-    'SEJONG': {lat:36.5146, lng:127.2588, name:'도담동', addr:'세종특별자치시 도담동'},
-    'B_SEOMYEON': {lat:35.1578, lng:129.0592, name:'서면역', addr:'부산 부산진구 부전동'},
-    'CUSTOM': {lat:37.5665, lng:126.9780, name:'서울시청', addr:'서울 중구'} // 기본값
+    'SEOUL': {lat:37.5665, lng:126.9780, name:'서울시청', addr:'서울 중구'},
+    'GYEONGGI': {lat:37.2750, lng:127.0092, name:'수원시청', addr:'경기 수원시'},
+    'INCHEON': {lat:37.4563, lng:126.7052, name:'인천시청', addr:'인천 남동구'},
+    'BUSAN': {lat:35.1796, lng:129.0756, name:'부산시청', addr:'부산 연제구'},
+    'DAEGU': {lat:35.8714, lng:128.6014, name:'대구시청', addr:'대구 중구'},
+    'DAEJEON': {lat:36.3504, lng:127.3845, name:'대전시청', addr:'대전 서구'},
+    'GWANGJU': {lat:35.1595, lng:126.8526, name:'광주시청', addr:'광주 서구'},
+    'SEJONG': {lat:36.4800, lng:127.2890, name:'세종시청', addr:'세종특별자치시'},
+    'CUSTOM': {lat:37.5665, lng:126.9780, name:'서울', addr:'원하시는 지역을 검색하세요'}
   };
   
   if (regions[userPrefs.region]) currentLoc = regions[userPrefs.region];
@@ -225,8 +231,8 @@ async function fetchAll(lat, lng) {
       return { bizCount: json.data.bizCount, isRealData: json.data.isRealData };
     } else throw new Error("API Error");
   } catch (e) { 
-    analysisData = { bizCount:15, monthlyRent:250, targetSales:2500, customersNeededPerDay:185, unitPrice: 4500, score:75, isRealData: false, analysis:{ summary:"서버 연동 지연", actionItems:["Vercel 서버 연결을 확인해주세요."] } };
-    return { bizCount: 15, isRealData: false }; 
+    analysisData = { bizCount:0, monthlyRent:0, targetSales:0, customersNeededPerDay:0, unitPrice: 0, score:0, isRealData: false, raw: {totalTradeCount:0, avgArea:0, avgTradePrice:0}, analysis:{ summary:"서버 연동 지연", actionItems:["Vercel 서버 연결을 확인해주세요."] } };
+    return { bizCount: 0, isRealData: false }; 
   }
 }
 
@@ -238,63 +244,81 @@ async function processLocation(lat, lng, name, addr) {
     const result = await fetchAll(lat, lng);
     renderSheet(name, addr, result.bizCount, result.isRealData);
     setSt('half');
-    toast(`3년치 공공데이터 분석 완료`);
+    toast(`데이터 분석 완료`);
   });
 }
 
+// ── 리포트 렌더링 (순서 재배치 적용) ──
 function openReport() {
   if (!analysisData) return;
   const modal = document.getElementById('reportModal');
   const content = document.getElementById('reportContent');
   const d = analysisData; 
 
-  const realEstateBlock = d.isRealData ? `
-    <div class="data-row" style="margin-bottom:12px;">
-      <span class="data-lbl">평당 매매가(최근 3년 기준)</span>
-      <span class="data-val">${d.realEstatePyeongPrice.toLocaleString()}만 원</span>
+  // 1. 공공데이터 원본 블록
+  const rawDataBlock = d.isRealData ? `
+    <div class="data-row">
+      <span class="data-lbl">최근 3년 누적 거래 건수</span>
+      <span class="data-val">${d.raw.totalTradeCount}건 발견</span>
     </div>
-    <div style="background:rgba(255,191,36,0.1); padding:16px; border-radius:12px; text-align:center;">
-      <div style="font-size:0.75rem; color:var(--yellow); font-weight:700; margin-bottom:6px;">15평 기준 추정 임대료 (수익률 5% 환산)</div>
-      <div class="data-highlight">월 ${d.monthlyRent.toLocaleString()}만 원</div>
+    <div class="data-row">
+      <span class="data-lbl">거래 상가 평균 전용면적</span>
+      <span class="data-val">${d.raw.avgArea} ㎡ (약 ${Math.round(d.raw.avgArea / 3.3)}평)</span>
+    </div>
+    <div class="data-row" style="margin-bottom:0;">
+      <span class="data-lbl">평균 매매 총액</span>
+      <span class="data-val">${d.raw.avgTradePrice.toLocaleString()}만 원</span>
     </div>
   ` : `
     <div style="background:rgba(255,71,87,0.1); border:1px solid rgba(255,71,87,0.3); padding:16px; border-radius:12px; text-align:center;">
-      <div style="color:var(--red); font-weight:900; margin-bottom:6px;">최근 3년 실거래 데이터 부족</div>
-      <div style="font-size:0.8rem; color:var(--text); line-height:1.4;">상업용 매매 내역이 없어 정확한 시세 추정이 불가합니다. 현장 임장이 필수입니다.</div>
+      <div style="color:var(--red); font-weight:900; margin-bottom:6px;">최근 3년 상업용 실거래 데이터 없음</div>
+      <div style="font-size:0.8rem; color:var(--text); line-height:1.4;">거래가 멈춰있는 상권이거나 신규 택지지구일 수 있습니다.</div>
     </div>
   `;
 
   content.innerHTML = `
+    <div class="report-sec">
+      <div class="report-t">📊 공공데이터 원본 요약</div>
+      <div class="data-row" style="border-bottom:1px dashed var(--border); padding-bottom:12px;">
+        <span class="data-lbl">반경 500m 내 [${userPrefs.catName}] 매장 수</span>
+        <span class="data-val" style="color:var(--cyan); font-size:1rem;">총 ${d.bizCount}개 점포</span>
+      </div>
+      ${rawDataBlock}
+    </div>
+
+    <div class="report-sec" style="border-color:var(--cyan);">
+      <div class="report-t" style="color:var(--cyan);">🏢 현실적 비용 및 생존 마지노선</div>
+      <div class="data-row">
+        <span class="data-lbl">평당 매매가 환산 시세</span>
+        <span class="data-val">${d.realEstatePyeongPrice.toLocaleString()}만 원 / 평</span>
+      </div>
+      <div style="background:rgba(255,191,36,0.1); padding:16px; border-radius:12px; text-align:center; margin-bottom:16px;">
+        <div style="font-size:0.75rem; color:var(--yellow); font-weight:700; margin-bottom:6px;">15평 기준 추정 임대료 (건물수익률 5%)</div>
+        <div class="data-highlight">월 ${d.monthlyRent.toLocaleString()}만 원</div>
+      </div>
+      <p style="font-size:0.8rem; color:var(--dim); line-height:1.5; margin-bottom:16px;">
+        임대료가 전체 매출의 10%를 넘지 않아야 사업이 유지됩니다.
+      </p>
+      <div class="data-row">
+        <span class="data-lbl">숨만 쉬어도 필요한 최소 매출</span>
+        <span class="data-val" style="color:var(--cyan); font-weight:900; font-size:1.1rem;">${d.targetSales.toLocaleString()}만 원</span>
+      </div>
+      <div style="background:var(--card2); padding:16px; border-radius:8px; margin-top:10px;">
+        <span style="font-size:0.8rem; color:var(--text);">☕ 적자를 피하려면 하루에 무조건 <b>${d.customersNeededPerDay}명</b>(객단가 ${d.unitPrice.toLocaleString()}원)의 손님을 받아야 합니다.</span>
+      </div>
+    </div>
+
     <div class="report-sec" style="background:var(--cyan); color:#000;">
-      <div style="font-size:0.8rem; font-weight:900; margin-bottom:8px; opacity:0.8;">공공데이터 팩트 기반 컨설팅</div>
+      <div style="font-size:0.8rem; font-weight:900; margin-bottom:8px; opacity:0.8;">🤖 AI 최종 분석 결론</div>
       <div style="font-size:1.1rem; font-weight:900; line-height:1.4; margin-bottom:12px;">"${d.analysis.summary}"</div>
       <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.1); padding:10px 14px; border-radius:8px;">
-        <span style="font-weight:700;">AI 생존 예측 점수</span>
+        <span style="font-weight:700;">AI 종합 매력도 점수</span>
         <span style="font-size:1.4rem; font-weight:900;">${d.score}점</span>
       </div>
     </div>
 
-    <div class="report-sec">
-      <div class="report-t">🏢 지역 시세 분석</div>
-      ${realEstateBlock}
-    </div>
-
-    <div class="report-sec" style="border-color:var(--cyan);">
-      <div class="report-t" style="color:var(--cyan);">🔥 월세 감당 생존 마지노선</div>
-      <p style="font-size:0.8rem; color:var(--dim); line-height:1.5; margin-bottom:16px;">
-        임대료가 매출의 10%를 넘지 않아야 안정적입니다. 이 월세를 감당하기 위한 최소 목표입니다.
-      </p>
-      <div class="data-row">
-        <span class="data-lbl">생존을 위한 월 최소 매출</span>
-        <span class="data-val">${d.targetSales.toLocaleString()}만 원</span>
-      </div>
-      <div style="background:var(--card2); padding:16px; border-radius:8px; margin-top:16px;">
-        <span style="font-size:0.8rem; color:var(--text);">☕ 적자를 피하려면 하루 평균 <b>${d.customersNeededPerDay}명</b>(객단가 ${d.unitPrice.toLocaleString()}원 기준)의 결제가 필요합니다.</span>
-      </div>
-    </div>
-
     <div class="report-sec" style="border-color:var(--yellow);">
-      <div class="report-t" style="color:var(--yellow);">💡 사장님을 위한 행동 지침</div>
+      <div class="report-t" style="color:var(--yellow);">💡 사장님을 위한 팩트 기반 행동 지침</div>
       <ul style="padding-left:20px; font-size:0.85rem; line-height:1.7; color:var(--text);">
         ${d.analysis.actionItems.map(item => `<li style="margin-bottom:10px;">${item}</li>`).join('')}
       </ul>
@@ -306,14 +330,14 @@ function openReport() {
 function renderSheet(name, addr, bizCount, isRealData) {
   document.getElementById('fullArea').innerHTML = `
     <div style="margin-bottom:16px;">
-      <h2 style="font-size:1.1rem; font-weight:900;">${name} 상권 분석 완료</h2>
+      <h2 style="font-size:1.1rem; font-weight:900;">${name} 상권 데이터 수집 완료</h2>
       <p style="color:var(--dim); font-size:0.7rem;">${addr}</p>
     </div>
     <div class="insight-box">
-      <div style="font-size:0.65rem; color:var(--cyan); font-weight:900; margin-bottom:6px;">3년치 공공데이터 스캔 현황</div>
-      <p style="font-size:0.8rem; line-height:1.5; margin-bottom:12px;">선택하신 [${userPrefs.catName}] 매장 <b>${bizCount}개</b> 포진.</p>
+      <div style="font-size:0.65rem; color:var(--cyan); font-weight:900; margin-bottom:6px;">공공데이터 스캔 현황</div>
+      <p style="font-size:0.8rem; line-height:1.5; margin-bottom:12px;">선택하신 [${userPrefs.catName}] 매장 <b>${bizCount}개</b> 발견.<br>최근 3년 부동산 실거래 데이터 교차 검증 완료.</p>
       <button style="width:100%; padding:14px; background:var(--cyan); color:#000; border:none; border-radius:8px; font-weight:900; font-size:0.95rem; cursor:pointer;" onclick="openReport()">
-        📊 팩트 기반 생존 리포트 확인
+        📊 최종 종합 분석 리포트 확인
       </button>
     </div>
   `;
