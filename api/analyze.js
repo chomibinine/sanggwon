@@ -39,7 +39,7 @@ export default async function handler(req, res) {
           if (totalArea > 0) {
             realEstatePyeongPrice = Math.round((totalPrice / totalArea) * 3.3058);
             isRealData = true;
-            break; // 데이터를 찾았으면 멈춤!
+            break; // 데이터를 찾았으면 멈춤
           }
         }
       }
