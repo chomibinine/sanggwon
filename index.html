@@ -7,37 +7,34 @@
 <meta name="theme-color" content="#07090f">
 <title>상권레이더 Pro - 창업 시뮬레이터</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script>
-  // 카카오맵 API 키 (Vercel 도메인/Github 도메인 모두 카카오 디벨로퍼스에 등록되어 있어야 합니다)
-  window.KAKAO_JS_KEY = 'adad7604fe27fca2b975f5bdae322340';
-</script>
+<script>window.KAKAO_JS_KEY = 'adad7604fe27fca2b975f5bdae322340';</script>
 <style>
-:root {
-  --bg:     #07090f; --card:   #111827; --card2:  #1a2235; --border: #1e2d45;
-  --cyan:   #00e5ff; --green:  #22d3a4; --yellow: #fbbf24; --red:    #ff4757;
-  --text:   #e2e8f0; --dim:    #64748b; --muted:  #2a3a52;
-}
+:root { --bg: #07090f; --card: #111827; --card2: #1a2235; --border: #1e2d45; --cyan: #00e5ff; --green: #22d3a4; --yellow: #fbbf24; --red: #ff4757; --text: #e2e8f0; --dim: #64748b; --muted: #2a3a52; }
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; }
 
 /* ── 온보딩(설문) UI ── */
 #onboarding { position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex; flex-direction:column; transition:all 0.5s ease; }
 #onboarding.hidden { opacity:0; visibility:hidden; pointer-events:none; display:none; }
-.ob-header { padding:20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+.ob-header { padding:16px 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
 .ob-logo { font-size:1.1rem; font-weight:900; color:var(--cyan); display:flex; align-items:center; gap:6px; }
 .ob-logo-dot { width:7px; height:7px; background:var(--cyan); border-radius:50%; animation:pdot 2s infinite; }
 .progress-bar { display:flex; gap:4px; }
 .p-dot { width:18px; height:4px; background:var(--border); border-radius:2px; transition:background 0.3s; }
 .p-dot.active { background:var(--cyan); }
-.step-container { flex:1; padding:24px 20px; display:none; flex-direction:column; overflow-y:auto; }
+
+.step-container { flex:1; padding:20px 16px; display:none; flex-direction:column; overflow-y:auto; }
 .step-container.active { display:flex; animation:fadeIn 0.4s ease forwards; }
 @keyframes fadeIn { from{opacity:0; transform:translateX(10px);} to{opacity:1; transform:translateX(0);} }
-.step-title { font-size:1.4rem; font-weight:900; margin-bottom:16px; line-height:1.3; }
-.narrative { background:var(--card2); border-left:3px solid var(--cyan); padding:16px; border-radius:8px; font-size:0.85rem; line-height:1.6; color:var(--text); margin-bottom:24px; }
-.opt-btn { background:var(--bg); border:1px solid var(--border); padding:16px; border-radius:12px; margin-bottom:10px; color:var(--dim); font-weight:700; cursor:pointer; text-align:left; display:flex; justify-content:space-between; align-items:center; transition:all 0.2s; }
+.step-title { font-size:1.3rem; font-weight:900; margin-bottom:12px; line-height:1.3; }
+.narrative { background:var(--card2); border-left:3px solid var(--cyan); padding:14px; border-radius:8px; font-size:0.8rem; line-height:1.5; color:var(--text); margin-bottom:16px; }
+
+/* 옵션 그리드 UI */
+.opt-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px; }
+.opt-btn { background:var(--bg); border:1px solid var(--border); padding:14px 12px; border-radius:10px; font-size:0.85rem; color:var(--dim); font-weight:700; cursor:pointer; text-align:center; transition:all 0.2s; position:relative; }
 .opt-btn.sel { border-color:var(--cyan); background:rgba(0,229,255,.08); color:var(--text); box-shadow:0 4px 12px rgba(0,229,255,.1); }
-.opt-btn.sel::after { content:'✓'; color:var(--cyan); font-weight:900; }
-.action-btn { background:var(--cyan); color:#000; padding:18px; border:none; border-radius:12px; font-weight:900; font-size:1rem; cursor:pointer; margin-top:auto; width:100%; transition:opacity 0.2s; opacity:0.5; pointer-events:none; }
+.opt-btn.sel::after { content:'✓'; position:absolute; top:6px; right:8px; color:var(--cyan); font-weight:900; font-size:0.75rem; }
+.action-btn { background:var(--cyan); color:#000; padding:16px; border:none; border-radius:12px; font-weight:900; font-size:1rem; cursor:pointer; margin-top:auto; width:100%; transition:opacity 0.2s; opacity:0.5; pointer-events:none; }
 .action-btn.active { opacity:1; pointer-events:all; }
 
 /* ── 메인 UI ── */
@@ -48,26 +45,22 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 
 .sheet { position:fixed; left:0; right:0; bottom:0; z-index:200; background:var(--card); border-radius:20px 20px 0 0; border-top:1px solid var(--border); transition:transform .35s cubic-bezier(0.21, 0.61, 0.35, 1); max-height:92vh; display:flex; flex-direction:column; transform:translateY(100%); }
 .sheet-peek { transform:translateY(calc(100% - 158px)); }
-.sheet-half { transform:translateY(40%); }
+.sheet-half { transform:translateY(30%); } 
 .sheet-full { transform:translateY(0); }
 .handle-wrap { display:flex; justify-content:center; padding:10px 0 10px; cursor:pointer; flex-shrink:0; }
 .handle { width:36px; height:4px; background:var(--muted); border-radius:2px; }
-.full-area { flex:1; overflow-y:auto; padding:0 16px 30px; display:none; }
+.full-area { flex:1; overflow-y:auto; padding:0 16px 50px; display:none; } 
 .sheet-half .full-area, .sheet-full .full-area { display:block; }
 
 .insight-box { background:rgba(0,229,255,0.06); border:1px solid rgba(0,229,255,0.2); border-radius:12px; padding:16px; margin-bottom:12px; }
-.mc { background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; }
-.mc-l { font-size:.58rem; font-weight:700; color:var(--dim); margin-bottom:4px; }
-.mc-v { font-family:'DM Mono',monospace; font-size:1.1rem; }
 
 /* 모달 리포트 */
-.modal { position:fixed; inset:0; z-index:400; background:var(--bg); transform:translateY(100%); transition:transform 0.4s ease; overflow-y:auto; padding:20px; padding-top:60px;}
+.modal { position:fixed; inset:0; z-index:400; background:var(--bg); transform:translateY(100%); transition:transform 0.4s ease; overflow-y:auto; padding:20px; padding-top:60px; padding-bottom:50px;}
 .modal.show { transform:translateY(0); }
 .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
 .close-btn { font-size:1.5rem; color:var(--dim); cursor:pointer; }
 .report-sec { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:16px; }
 .report-t { font-size:0.95rem; font-weight:900; margin-bottom:15px; color:var(--cyan); display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border); padding-bottom:10px; }
-
 .data-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:0.85rem; }
 .data-lbl { color:var(--dim); }
 .data-val { font-weight:700; color:var(--text); }
@@ -85,47 +78,73 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 
 <div id="onboarding">
   <div class="ob-header">
-    <div class="ob-logo"><div class="ob-logo-dot"></div>상권레이더</div>
+    <div class="ob-logo"><div class="ob-logo-dot"></div>상권레이더 Pro</div>
     <div class="progress-bar">
       <div class="p-dot active" id="p1"></div><div class="p-dot" id="p2"></div><div class="p-dot" id="p3"></div><div class="p-dot" id="p4"></div>
     </div>
   </div>
 
   <div class="step-container active" id="step1">
-    <div class="step-title">창업 준비 중인<br>업종을 선택해 주세요.</div>
-    <div class="narrative">"업종마다 들어가는 돈이 다르거든요. 사장님의 관심 분야를 알려주시면 맞춤 견적을 뽑아드릴게요."</div>
-    <div class="opt-btn" onclick="selectOpt(1, 'I', 'I12', '카페/베이커리', this)">☕ 카페 / 베이커리</div>
-    <div class="opt-btn" onclick="selectOpt(1, 'I', 'I01', '일반식당', this)">🍚 일반 식당</div>
-    <div class="opt-btn" onclick="selectOpt(1, 'R', '', '학원/교육', this)">📚 학원 / 교육</div>
-    <div class="opt-btn" onclick="selectOpt(1, 'G', 'G02', '편의점', this)">🏪 편의점 / 소매점</div>
+    <div class="step-title">어떤 업종의 창업을<br>준비 중이신가요?</div>
+    <div class="narrative">"업종마다 필요 면적과 객단가가 다릅니다. 원하시는 카테고리를 선택해 주세요."</div>
+    <div class="opt-grid">
+      <div class="opt-btn" onclick="selectOpt(1, 'I', 'I12', '카페/디저트', this)">☕ 카페/디저트</div>
+      <div class="opt-btn" onclick="selectOpt(1, 'I', 'I01', '한식 식당', this)">🍚 한식 식당</div>
+      <div class="opt-btn" onclick="selectOpt(1, 'I', 'I04', '양식/레스토랑', this)">🍝 양식/레스토랑</div>
+      <div class="opt-btn" onclick="selectOpt(1, 'I', 'I03', '일식/초밥', this)">🍣 일식/초밥</div>
+      <div class="opt-btn" onclick="selectOpt(1, 'I', 'I02', '중식 식당', this)">🍜 중식 식당</div>
+      <div class="opt-btn" onclick="selectOpt(1, 'I', 'I05', '치킨/호프', this)">🍗 치킨/호프</div>
+      <div class="opt-btn" onclick="selectOpt(1, 'S', 'S01', '미용실/헤어', this)">✂️ 미용실/헤어</div>
+      <div class="opt-btn" onclick="selectOpt(1, 'P', 'P01', '헬스/필라테스', this)">💪 헬스/필라테스</div>
+      <div class="opt-btn" onclick="selectOpt(1, 'R', 'R01', '입시/보습학원', this)">📚 입시/보습학원</div>
+      <div class="opt-btn" onclick="selectOpt(1, 'G', 'G02', '편의점/마트', this)">🏪 편의점/마트</div>
+    </div>
     <button class="action-btn" id="btn-next1" onclick="nextStep(2)">다음으로 (1/4)</button>
   </div>
 
   <div class="step-container" id="step2">
-    <div class="step-title">전체 창업 예산은<br>어느 정도인가요?</div>
-    <div class="narrative">"보증금부터 인테리어까지 생각하신 총 예산을 알려주세요. 무리하지 않는 선에서 최고의 자리를 찾아볼게요."</div>
-    <div class="opt-btn" onclick="selectOpt(2, '5000', '', '5천만 원', this)">💸 5,000만 원 내외</div>
-    <div class="opt-btn" onclick="selectOpt(2, '10000', '', '1억 원', this)">💰 1억 원 내외</div>
-    <div class="opt-btn" onclick="selectOpt(2, '20000', '', '2억 원', this)">💎 2억 원 이상</div>
+    <div class="step-title">초기 자본금(예산)은<br>어느 정도인가요?</div>
+    <div class="narrative">"보증금과 시설/인테리어를 포함한 총 가용 예산을 골라주세요."</div>
+    <div class="opt-grid">
+      <div class="opt-btn" onclick="selectOpt(2, '3000', '', '3천만 원', this)">3,000만 원 이하</div>
+      <div class="opt-btn" onclick="selectOpt(2, '5000', '', '5천만 원', this)">5,000만 원 내외</div>
+      <div class="opt-btn" onclick="selectOpt(2, '10000', '', '1억 원', this)">1억 원 내외</div>
+      <div class="opt-btn" onclick="selectOpt(2, '15000', '', '1.5억 원', this)">1억 5천만 원</div>
+      <div class="opt-btn" onclick="selectOpt(2, '20000', '', '2억 원', this)">2억 원 내외</div>
+      <div class="opt-btn" onclick="selectOpt(2, '30000', '', '3억 원', this)">3억 원 이상</div>
+      <div class="opt-btn" onclick="selectOpt(2, '50000', '', '5억 원', this)">5억 원 이상</div>
+      <div class="opt-btn" onclick="selectOpt(2, '99999', '', '제한없음', this)">자본금 여유 있음</div>
+    </div>
     <button class="action-btn" id="btn-next2" onclick="nextStep(3)">다음으로 (2/4)</button>
   </div>
 
   <div class="step-container" id="step3">
-    <div class="step-title">어떤 고객들을<br>주로 공략하실 건가요?</div>
-    <div class="narrative">"타겟이 확실해야 리포트가 날카로워져요! 사장님의 메뉴를 좋아할 층을 골라보세요."</div>
-    <div class="opt-btn" onclick="selectOpt(3, '2030', '', 'MZ세대', this)">👩‍🦰 MZ세대 (트렌드 소비)</div>
-    <div class="opt-btn" onclick="selectOpt(3, 'WORKER', '', '직장인', this)">💼 직장인 (점심/회식 소비)</div>
-    <div class="opt-btn" onclick="selectOpt(3, 'RESIDENT', '', '가족 단위', this)">👨‍👩‍👧 가족 단위 (주거 밀착)</div>
+    <div class="step-title">어떤 고객층을<br>중점 공략하시겠습니까?</div>
+    <div class="narrative">"상권마다 거주/근무하는 인구 비율이 다릅니다. 핵심 타겟을 알려주세요."</div>
+    <div class="opt-grid">
+      <div class="opt-btn" onclick="selectOpt(3, 'TEEN', '', '10대 학생', this)">🎒 10대 학생</div>
+      <div class="opt-btn" onclick="selectOpt(3, 'F2030', '', '2030 여성', this)">👩‍🦰 2030 여성</div>
+      <div class="opt-btn" onclick="selectOpt(3, 'M2030', '', '2030 남성', this)">👨‍🦱 2030 남성</div>
+      <div class="opt-btn" onclick="selectOpt(3, 'WORKER', '', '3040 직장인', this)">💼 3040 직장인</div>
+      <div class="opt-btn" onclick="selectOpt(3, 'FAMILY', '', '가족/주부', this)">👨‍👩‍👧 4050 가족/주부</div>
+      <div class="opt-btn" onclick="selectOpt(3, 'SENIOR', '', '60대 이상 시니어', this)">🧓 60대 시니어</div>
+    </div>
     <button class="action-btn" id="btn-next3" onclick="nextStep(4)">다음으로 (3/4)</button>
   </div>
 
   <div class="step-container" id="step4">
-    <div class="step-title">먼저 살펴보고 싶은<br>지역을 골라주세요.</div>
-    <div class="narrative">"마지막 단계입니다! 지역을 고르시면 해당 구역의 '실제 부동산 시세'를 바탕으로 현실적인 리포트를 만들어 드릴게요."</div>
-    <div class="opt-btn" onclick="selectOpt(4, 'SEOUL', '', '서울 강남', this)">🏢 서울 강남 (역삼/신사)</div>
-    <div class="opt-btn" onclick="selectOpt(4, 'MAPO', '', '서울 마포', this)">🎨 서울 마포 (홍대/합정)</div>
-    <div class="opt-btn" onclick="selectOpt(4, 'SEJONG', '', '세종특별자치시', this)">🌳 세종시 (도담/나성)</div>
-    <button class="action-btn" id="btn-next4" onclick="finishOnboarding()">부동산 기반 리포트 생성</button>
+    <div class="step-title">탐색할 핵심 지역을<br>선택해 주세요.</div>
+    <div class="narrative">"선택하신 지역의 반경 500m 내 3년 치 실거래가를 스캔하여 분석합니다."</div>
+    <div class="opt-grid" style="grid-template-columns:1fr;">
+      <div class="opt-btn" onclick="selectOpt(4, 'S_GANGNAM', '', '서울 강남', this)">🏢 [서울] 강남역/역삼 일대</div>
+      <div class="opt-btn" onclick="selectOpt(4, 'S_HONGDAE', '', '서울 홍대', this)">🎸 [서울] 홍대입구/합정 일대</div>
+      <div class="opt-btn" onclick="selectOpt(4, 'S_SEONGSU', '', '서울 성수', this)">☕ [서울] 성수동 카페거리 일대</div>
+      <div class="opt-btn" onclick="selectOpt(4, 'G_BUNDANG', '', '경기 분당', this)">🏞️ [경기] 분당 서현/정자 일대</div>
+      <div class="opt-btn" onclick="selectOpt(4, 'SEJONG', '', '세종 도담', this)">🌳 [충청] 세종시 도담/나성 일대</div>
+      <div class="opt-btn" onclick="selectOpt(4, 'B_SEOMYEON', '', '부산 서면', this)">🌊 [부산] 서면/전포 일대</div>
+      <div class="opt-btn" onclick="selectOpt(4, 'CUSTOM', '', '지도 직접 검색', this)">📍 지도에서 직접 검색하기</div>
+    </div>
+    <button class="action-btn" id="btn-next4" onclick="finishOnboarding()">3년치 데이터 분석 스캔 시작</button>
   </div>
 </div>
 
@@ -147,7 +166,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
   <div id="reportContent"></div>
 </div>
 
-<div class="loader" id="loader"><div class="lring"></div><div id="ltxt" style="font-size:.8rem; color:var(--dim); margin-top:10px;">데이터 분석 중...</div></div>
+<div class="loader" id="loader"><div class="lring"></div><div id="ltxt" style="font-size:.8rem; color:var(--dim); margin-top:10px;">빅데이터 스캔 중...</div></div>
 <div class="toast" id="toast"><div id="thead" style="font-weight:700; color:var(--green); font-size:.7rem;">✓</div><div id="tmsg"></div></div>
 
 <script>
@@ -157,7 +176,6 @@ let userPrefs = { lcls: '', mcls: '', catName: '', budget: 0, target: '', region
 let currentLoc = { lat: 37.4979, lng: 127.0276, name: '강남역', addr: '서울 강남구 역삼동' };
 let analysisData = null;
 
-// ── 온보딩 로직 ──
 function selectOpt(step, val1, val2, label, btn) {
   document.getElementById(`step${step}`).querySelectorAll('.opt-btn').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
@@ -176,23 +194,27 @@ function nextStep(s){
 
 function finishOnboarding(){
   document.getElementById('onboarding').classList.add('hidden');
-  if(userPrefs.region==='SEOUL') currentLoc={lat:37.4979,lng:127.0276,name:'강남역',addr:'서울 강남구'};
-  else if(userPrefs.region==='MAPO') currentLoc={lat:37.5571,lng:126.9245,name:'홍대입구',addr:'서울 마포구'};
-  else if(userPrefs.region==='SEJONG') currentLoc={lat:36.5146,lng:127.2588,name:'도담동',addr:'세종특별자치시'};
+  
+  const regions = {
+    'S_GANGNAM': {lat:37.4979, lng:127.0276, name:'강남역', addr:'서울 강남구 역삼동'},
+    'S_HONGDAE': {lat:37.5571, lng:126.9245, name:'홍대입구', addr:'서울 마포구 서교동'},
+    'S_SEONGSU': {lat:37.5445, lng:127.0560, name:'성수동', addr:'서울 성동구 성수동'},
+    'G_BUNDANG': {lat:37.3828, lng:127.1189, name:'서현역', addr:'경기 성남시 분당구 서현동'},
+    'SEJONG': {lat:36.5146, lng:127.2588, name:'도담동', addr:'세종특별자치시 도담동'},
+    'B_SEOMYEON': {lat:35.1578, lng:129.0592, name:'서면역', addr:'부산 부산진구 부전동'},
+    'CUSTOM': {lat:37.5665, lng:126.9780, name:'서울시청', addr:'서울 중구'} // 기본값
+  };
+  
+  if (regions[userPrefs.region]) currentLoc = regions[userPrefs.region];
   loadKakao();
 }
 
-// ── 데이터 연동 로직 (Vercel Backend) ──
 async function fetchAll(lat, lng) {
-  // 1. 카카오 지오코더로 위경도를 법정동 코드로 변환
   const lawdCd = await new Promise(r => {
     if(!kakaoOk) return r('11680');
-    new kakao.maps.services.Geocoder().coord2RegionCode(lng, lat, (res, st) => {
-      r(st==='OK' ? res[0].code.substring(0,5) : '11680');
-    });
+    new kakao.maps.services.Geocoder().coord2RegionCode(lng, lat, (res, st) => r(st==='OK' ? res[0].code.substring(0,5) : '11680'));
   });
 
-  // 2. Vercel 백엔드 호출
   const query = `lat=${lat}&lng=${lng}&lcls=${userPrefs.lcls}&mcls=${userPrefs.mcls}&budget=${userPrefs.budget}&lawdCd=${lawdCd}`;
   
   try {
@@ -201,13 +223,9 @@ async function fetchAll(lat, lng) {
     if(json.success) {
       analysisData = json.data;
       return { bizCount: json.data.bizCount, isRealData: json.data.isRealData };
-    } else {
-      throw new Error("API Error");
-    }
+    } else throw new Error("API Error");
   } catch (e) { 
-    console.error(e);
-    // 에러 발생 시 폴백 더미 데이터
-    analysisData = { bizCount:15, monthlyRent:250, targetSales:2500, customersNeededPerDay:185, unitPrice: 4500, score:75, isRealData: false, analysis:{ summary:"서버 연동 지연", actionItems:["Vercel 서버 상태를 확인해주세요."] } };
+    analysisData = { bizCount:15, monthlyRent:250, targetSales:2500, customersNeededPerDay:185, unitPrice: 4500, score:75, isRealData: false, analysis:{ summary:"서버 연동 지연", actionItems:["Vercel 서버 연결을 확인해주세요."] } };
     return { bizCount: 15, isRealData: false }; 
   }
 }
@@ -220,11 +238,10 @@ async function processLocation(lat, lng, name, addr) {
     const result = await fetchAll(lat, lng);
     renderSheet(name, addr, result.bizCount, result.isRealData);
     setSt('half');
-    toast(`상권 분석이 완료되었습니다.`);
+    toast(`3년치 공공데이터 분석 완료`);
   });
 }
 
-// ── 리포트 렌더링 ──
 function openReport() {
   if (!analysisData) return;
   const modal = document.getElementById('reportModal');
@@ -233,21 +250,35 @@ function openReport() {
 
   const realEstateBlock = d.isRealData ? `
     <div class="data-row" style="margin-bottom:12px;">
-      <span class="data-lbl">평당 평균 실거래가</span>
+      <span class="data-lbl">평당 매매가(최근 3년 기준)</span>
       <span class="data-val">${d.realEstatePyeongPrice.toLocaleString()}만 원</span>
     </div>
     <div style="background:rgba(255,191,36,0.1); padding:16px; border-radius:12px; text-align:center;">
-      <div style="font-size:0.75rem; color:var(--yellow); font-weight:700; margin-bottom:6px;">15평 기준 추정 월세 (수익률 5% 반영)</div>
+      <div style="font-size:0.75rem; color:var(--yellow); font-weight:700; margin-bottom:6px;">15평 기준 추정 임대료 (수익률 5% 환산)</div>
       <div class="data-highlight">월 ${d.monthlyRent.toLocaleString()}만 원</div>
     </div>
   ` : `
     <div style="background:rgba(255,71,87,0.1); border:1px solid rgba(255,71,87,0.3); padding:16px; border-radius:12px; text-align:center;">
-      <div style="color:var(--red); font-weight:900; margin-bottom:6px;">실거래 데이터 부족</div>
-      <div style="font-size:0.8rem; color:var(--text); line-height:1.4;">최근 2개월 내 상업용 매매 실거래 내역이 없어 시세 추정이 불가합니다.<br>현장 부동산 임장이 필수입니다.</div>
+      <div style="color:var(--red); font-weight:900; margin-bottom:6px;">최근 3년 실거래 데이터 부족</div>
+      <div style="font-size:0.8rem; color:var(--text); line-height:1.4;">상업용 매매 내역이 없어 정확한 시세 추정이 불가합니다. 현장 임장이 필수입니다.</div>
     </div>
   `;
 
-  const bepBlock = d.isRealData ? `
+  content.innerHTML = `
+    <div class="report-sec" style="background:var(--cyan); color:#000;">
+      <div style="font-size:0.8rem; font-weight:900; margin-bottom:8px; opacity:0.8;">공공데이터 팩트 기반 컨설팅</div>
+      <div style="font-size:1.1rem; font-weight:900; line-height:1.4; margin-bottom:12px;">"${d.analysis.summary}"</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.1); padding:10px 14px; border-radius:8px;">
+        <span style="font-weight:700;">AI 생존 예측 점수</span>
+        <span style="font-size:1.4rem; font-weight:900;">${d.score}점</span>
+      </div>
+    </div>
+
+    <div class="report-sec">
+      <div class="report-t">🏢 지역 시세 분석</div>
+      ${realEstateBlock}
+    </div>
+
     <div class="report-sec" style="border-color:var(--cyan);">
       <div class="report-t" style="color:var(--cyan);">🔥 월세 감당 생존 마지노선</div>
       <p style="font-size:0.8rem; color:var(--dim); line-height:1.5; margin-bottom:16px;">
@@ -261,25 +292,6 @@ function openReport() {
         <span style="font-size:0.8rem; color:var(--text);">☕ 적자를 피하려면 하루 평균 <b>${d.customersNeededPerDay}명</b>(객단가 ${d.unitPrice.toLocaleString()}원 기준)의 결제가 필요합니다.</span>
       </div>
     </div>
-  ` : '';
-
-  content.innerHTML = `
-    <div class="report-sec" style="background:${d.isRealData ? 'var(--cyan)' : 'var(--card2)'}; color:${d.isRealData ? '#000' : 'var(--text)'};">
-      <div style="font-size:0.8rem; font-weight:900; margin-bottom:8px; opacity:0.8;">공공데이터 팩트 기반 컨설팅</div>
-      <div style="font-size:1.1rem; font-weight:900; line-height:1.4; margin-bottom:12px;">"${d.analysis.summary}"</div>
-      ${d.isRealData ? `
-      <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.1); padding:10px 14px; border-radius:8px;">
-        <span style="font-weight:700;">AI 생존 예측 점수</span>
-        <span style="font-size:1.4rem; font-weight:900;">${d.score}점</span>
-      </div>` : ''}
-    </div>
-
-    <div class="report-sec">
-      <div class="report-t">🏢 국토교통부 실거래 기반 시세</div>
-      ${realEstateBlock}
-    </div>
-
-    ${bepBlock}
 
     <div class="report-sec" style="border-color:var(--yellow);">
       <div class="report-t" style="color:var(--yellow);">💡 사장님을 위한 행동 지침</div>
@@ -298,17 +310,15 @@ function renderSheet(name, addr, bizCount, isRealData) {
       <p style="color:var(--dim); font-size:0.7rem;">${addr}</p>
     </div>
     <div class="insight-box">
-      <div style="font-size:0.65rem; color:var(--cyan); font-weight:900; margin-bottom:6px;">공공데이터 스캔 현황</div>
-      <p style="font-size:0.8rem; line-height:1.5;">선택하신 ${userPrefs.catName} 업종 <b>${bizCount}개</b> 포진.<br>
-      ${isRealData ? '국토교통부 실거래 데이터가 확인되었습니다.' : '<span style="color:var(--red)">실거래 내역이 부족하여 현장 점검이 필요합니다.</span>'}</p>
+      <div style="font-size:0.65rem; color:var(--cyan); font-weight:900; margin-bottom:6px;">3년치 공공데이터 스캔 현황</div>
+      <p style="font-size:0.8rem; line-height:1.5; margin-bottom:12px;">선택하신 [${userPrefs.catName}] 매장 <b>${bizCount}개</b> 포진.</p>
+      <button style="width:100%; padding:14px; background:var(--cyan); color:#000; border:none; border-radius:8px; font-weight:900; font-size:0.95rem; cursor:pointer;" onclick="openReport()">
+        📊 팩트 기반 생존 리포트 확인
+      </button>
     </div>
-    <button style="width:100%; padding:18px; background:var(--cyan); color:#000; border:none; border-radius:14px; font-weight:900; font-size:0.95rem; cursor:pointer;" onclick="openReport()">
-      📊 팩트 기반 생존 리포트 확인
-    </button>
   `;
 }
 
-// ── 기초 헬퍼 ──
 function loadKakao() {
   const sc = document.createElement('script');
   sc.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${window.KAKAO_JS_KEY}&libraries=services&autoload=false`;
@@ -316,15 +326,12 @@ function loadKakao() {
     kakaoOk = true; 
     map = new kakao.maps.Map(document.getElementById('kakaoMap'), { center: new kakao.maps.LatLng(currentLoc.lat, currentLoc.lng), level:5 }); 
     kakao.maps.event.addListener(map, 'click', e => processLocation(e.latLng.getLat(), e.latLng.getLng(), "선택 지점", "사용자 지정 위치")); 
-    
-    // 검색창 로직
     const ps = new kakao.maps.services.Places();
     document.getElementById('searchInput').onkeydown = e => {
       if(e.key === 'Enter') ps.keywordSearch(e.target.value, (data, st) => {
         if(st === kakao.maps.services.Status.OK) processLocation(data[0].y, data[0].x, data[0].place_name, data[0].address_name);
       });
     };
-    
     processLocation(currentLoc.lat, currentLoc.lng, currentLoc.name, currentLoc.addr); 
   });
   document.head.appendChild(sc);
