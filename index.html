@@ -27,7 +27,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 .ob-logo { font-size:1.1rem; font-weight:900; color:var(--cyan); display:flex; align-items:center; gap:6px; }
 .ob-logo-dot { width:7px; height:7px; background:var(--cyan); border-radius:50%; animation:pdot 2s infinite; }
 .progress-bar { display:flex; gap:4px; }
-.p-dot { width:24px; height:4px; background:var(--border); border-radius:2px; transition:background 0.3s; }
+.p-dot { width:18px; height:4px; background:var(--border); border-radius:2px; transition:background 0.3s; }
 .p-dot.active { background:var(--cyan); }
 
 .step-container { flex:1; padding:24px 20px; display:none; flex-direction:column; overflow-y:auto; }
@@ -87,6 +87,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
       <div class="p-dot active" id="p1"></div>
       <div class="p-dot" id="p2"></div>
       <div class="p-dot" id="p3"></div>
+      <div class="p-dot" id="p4"></div>
     </div>
   </div>
 
@@ -99,19 +100,19 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
     <div class="opt-btn" onclick="selectOpt(1, 'I', 'I01', '한식 식당', this)">🍚 일반 음식점 (한식/양식 등)</div>
     <div class="opt-btn" onclick="selectOpt(1, 'R', '', '학원/교육', this)">📚 학원 / 교육 서비스</div>
     <div class="opt-btn" onclick="selectOpt(1, 'G', 'G02', '편의점', this)">🏪 편의점 / 소매점</div>
-    <button class="action-btn" id="btn-next1" onclick="nextStep(2)">다음으로 (1/3)</button>
+    <button class="action-btn" id="btn-next1" onclick="nextStep(2)">다음으로 (1/4)</button>
   </div>
 
   <div class="step-container" id="step2">
     <div class="step-title">초기 자본금(예산)은<br>어느 정도이신가요?</div>
     <div class="narrative">
-      "무작정 유동인구가 많은 A급 상권은 임대료와 권리금 허들이 너무 높아요. 사장님의 현실적인 예산에 맞는 최적의 입지를 찾아드릴게요."
+      "무작정 유동인구가 많은 A급 상권은 임대료와 권리금 허들이 너무 높아요. 현실적인 예산에 맞는 최적의 입지를 찾아드릴게요."
     </div>
     <div class="opt-btn" onclick="selectOpt(2, '5000', '', '5천만 원 이하', this)">💸 5,000만 원 이하 (소자본)</div>
     <div class="opt-btn" onclick="selectOpt(2, '10000', '', '1억 원 이하', this)">💰 5,000만 원 ~ 1억 원</div>
     <div class="opt-btn" onclick="selectOpt(2, '20000', '', '2억 원 이하', this)">💎 1억 원 ~ 2억 원</div>
     <div class="opt-btn" onclick="selectOpt(2, '30000', '', '2억 원 초과', this)">🏦 2억 원 초과 (대형 점포)</div>
-    <button class="action-btn" id="btn-next2" onclick="nextStep(3)">다음으로 (2/3)</button>
+    <button class="action-btn" id="btn-next2" onclick="nextStep(3)">다음으로 (2/4)</button>
   </div>
 
   <div class="step-container" id="step3">
@@ -123,7 +124,19 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
     <div class="opt-btn" onclick="selectOpt(3, 'WORK', '', '직장인', this)">💼 인근 직장인 (점심/회식 타겟)</div>
     <div class="opt-btn" onclick="selectOpt(3, 'STUDENT', '', '학생', this)">🎒 학생/10대 (방과 후 타겟)</div>
     <div class="opt-btn" onclick="selectOpt(3, 'FAMILY', '', '가족 단위', this)">👨‍👩‍👧 가족 단위 (주거단지 배후 타겟)</div>
-    <button class="action-btn" id="btn-next3" onclick="finishOnboarding()">내게 맞는 상권 분석하기</button>
+    <button class="action-btn" id="btn-next3" onclick="nextStep(4)">다음으로 (3/4)</button>
+  </div>
+
+  <div class="step-container" id="step4">
+    <div class="step-title">우선적으로 탐색해볼<br>지역을 골라주세요.</div>
+    <div class="narrative">
+      "마지막입니다! 먼저 살펴보고 싶은 지역을 알려주시면, 그곳을 중심으로 맞춤 분석을 시작할게요. (나중에 지도에서 다른 곳도 검색 가능해요)"
+    </div>
+    <div class="opt-btn" onclick="selectOpt(4, 'SEOUL', '', '서울 강남', this)">🏢 서울 주요 상권 (강남역 중심)</div>
+    <div class="opt-btn" onclick="selectOpt(4, 'SEJONG', '', '세종/충청', this)">🌳 세종 / 충청 (도담동 중심)</div>
+    <div class="opt-btn" onclick="selectOpt(4, 'BUSAN', '', '부산/경남', this)">🌊 부산 / 경남 (서면 중심)</div>
+    <div class="opt-btn" onclick="selectOpt(4, 'DEFAULT', '', '임의 지역', this)">📍 나중에 지도에서 직접 검색할게요</div>
+    <button class="action-btn" id="btn-next4" onclick="finishOnboarding()">내게 맞는 상권 분석하기</button>
   </div>
 </div>
 
@@ -148,28 +161,26 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); colo
 // ── 상태 관리 ──
 let kakaoOk = false, map = null, sheetSt = 'peek', toastTm = null;
 let storeMarkers = [];
-let currentLoc = { lat: 37.5571, lng: 126.9245, name: '홍대입구', addr: '마포구 서교동', lawdCd: '11440' };
+let currentLoc = { lat: 37.4979, lng: 127.0276, name: '강남역', addr: '강남구 역삼동', lawdCd: '11680' }; // 기본값 강남
 
 // 온보딩으로 수집된 사용자 니즈
-let userPrefs = { lcls: '', mcls: '', catName: '', budget: '', target: '' };
+let userPrefs = { lcls: '', mcls: '', catName: '', budget: '', target: '', region: '' };
 let reportDataCache = { bizCount: 0, insight: {}, realEstateStr: "조회 중...", realEstateDesc: "" };
 
 const API_KEY = '1ddcc7f0063f3f004733b2651211cfe7ae0b11cc01f584205c1546bab1858c60';
 
 // ── 온보딩 로직 ──
 function selectOpt(step, val1, val2, label, btn) {
-  // 선택 효과 UI 업데이트
   const container = document.getElementById(`step${step}`);
   container.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
   
-  // 다음 버튼 활성화
   document.getElementById(`btn-next${step}`).classList.add('active');
 
-  // 데이터 저장
   if(step === 1) { userPrefs.lcls = val1; userPrefs.mcls = val2; userPrefs.catName = label; }
   if(step === 2) { userPrefs.budget = val1; }
   if(step === 3) { userPrefs.target = val1; }
+  if(step === 4) { userPrefs.region = val1; }
 }
 
 function nextStep(step) {
@@ -182,12 +193,20 @@ function finishOnboarding() {
   document.getElementById('onboarding').classList.add('hidden');
   toast('사장님 맞춤 상권 탐색을 시작합니다!', '🚀 레이더 가동');
   
-  // 카카오맵 강제 호출 (온보딩이 끝났으므로)
+  // 선택한 지역에 따라 초기 좌표 셋팅
+  if (userPrefs.region === 'SEOUL') {
+    currentLoc = { lat: 37.4979, lng: 127.0276, name: '강남역', addr: '서울 강남구 역삼동', lawdCd: '11680' };
+  } else if (userPrefs.region === 'SEJONG') {
+    currentLoc = { lat: 36.5146, lng: 127.2588, name: '도담동', addr: '세종특별자치시 도담동', lawdCd: '36110' };
+  } else if (userPrefs.region === 'BUSAN') {
+    currentLoc = { lat: 35.1578, lng: 129.0592, name: '서면', addr: '부산 부산진구 부전동', lawdCd: '26230' };
+  }
+
   if(!kakaoOk) loadKakao();
   else processLocation(currentLoc.lat, currentLoc.lng, currentLoc.name, currentLoc.addr);
 }
 
-// ── 데이터 Fetch 로직 (기존 유지) ──
+// ── 데이터 Fetch 로직 ──
 function getLawdCd(lng, lat) {
   return new Promise((resolve) => {
     if(!kakaoOk) return resolve('11680'); 
@@ -277,11 +296,10 @@ async function processLocation(lat, lng, name, addr) {
       reportDataCache.realEstateDesc = "최근 3개월 내 해당 지역 상가 매매가 없습니다.";
     }
 
-    // 온보딩 데이터를 바탕으로 한 인사이트 생성
     reportDataCache.insight = generateInsight(reportDataCache.bizCount, userPrefs.catName, userPrefs.budget);
     
     renderSheet(name, addr, reportDataCache.bizCount, reportDataCache.insight);
-    setSt('half'); // 온보딩 후에는 시트가 자동으로 반쯤 올라오게 설정
+    setSt('half'); 
   });
 }
 
