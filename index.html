@@ -1,386 +1,625 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#07090f">
-<title>상권레이더 Pro - 창업 시뮬레이터</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script>window.KAKAO_JS_KEY = 'adad7604fe27fca2b975f5bdae322340';</script>
-<style>
-:root { --bg: #07090f; --card: #111827; --card2: #1a2235; --border: #1e2d45; --cyan: #00e5ff; --green: #22d3a4; --yellow: #fbbf24; --red: #ff4757; --text: #e2e8f0; --dim: #64748b; --muted: #2a3a52; }
-* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; }
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  ImageIcon, 
+  Loader2, 
+  AlertCircle, 
+  CheckCircle2, 
+  Play, 
+  Trash2, 
+  RefreshCw,
+  Download,
+  Share2,
+  Maximize2,
+  ImagePlus,
+  X,
+  Eye,
+  Key
+} from 'lucide-react';
 
-/* ── 온보딩(설문) UI ── */
-#onboarding { position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex; flex-direction:column; transition:all 0.5s ease; }
-#onboarding.hidden { opacity:0; visibility:hidden; pointer-events:none; display:none; }
-.ob-header { padding:16px 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
-.ob-logo { font-size:1.1rem; font-weight:900; color:var(--cyan); display:flex; align-items:center; gap:6px; }
-.ob-logo-dot { width:7px; height:7px; background:var(--cyan); border-radius:50%; animation:pdot 2s infinite; }
-.progress-bar { display:flex; gap:4px; }
-.p-dot { width:18px; height:4px; background:var(--border); border-radius:2px; transition:background 0.3s; }
-.p-dot.active { background:var(--cyan); }
+// 기본 환경 제공 키 (참조 기능이 없는 순수 텍스트 생성용)
+const defaultApiKey = ""; 
 
-.step-container { flex:1; padding:20px 16px; display:none; flex-direction:column; overflow-y:auto; }
-.step-container.active { display:flex; animation:fadeIn 0.4s ease forwards; }
-@keyframes fadeIn { from{opacity:0; transform:translateX(10px);} to{opacity:1; transform:translateX(0);} }
-.step-title { font-size:1.3rem; font-weight:900; margin-bottom:12px; line-height:1.3; }
-.narrative { background:var(--card2); border-left:3px solid var(--cyan); padding:14px; border-radius:8px; font-size:0.8rem; line-height:1.5; color:var(--text); margin-bottom:16px; }
-
-/* 옵션 그리드 UI */
-.opt-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px; }
-.opt-btn { background:var(--bg); border:1px solid var(--border); padding:14px 12px; border-radius:10px; font-size:0.85rem; color:var(--dim); font-weight:700; cursor:pointer; text-align:center; transition:all 0.2s; position:relative; }
-.opt-btn.sel { border-color:var(--cyan); background:rgba(0,229,255,.08); color:var(--text); box-shadow:0 4px 12px rgba(0,229,255,.1); }
-.opt-btn.sel::after { content:'✓'; position:absolute; top:6px; right:8px; color:var(--cyan); font-weight:900; font-size:0.75rem; }
-.action-btn { background:var(--cyan); color:#000; padding:16px; border:none; border-radius:12px; font-weight:900; font-size:1rem; cursor:pointer; margin-top:auto; width:100%; transition:opacity 0.2s; opacity:0.5; pointer-events:none; flex-shrink:0; }
-.action-btn.active { opacity:1; pointer-events:all; }
-
-/* ── 메인 UI ── */
-.topnav { position:fixed; top:0; left:0; right:0; z-index:300; height:52px; background:rgba(7,9,15,.96); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 14px; gap:10px; }
-.search-bar { flex:1; background:var(--card2); border:1px solid var(--border); border-radius:22px; display:flex; align-items:center; padding:0 13px; height:36px; }
-.search-bar input { flex:1; background:none; border:none; color:var(--text); font-size:.85rem; outline:none; }
-#kakaoMap { position:fixed; top:52px; left:0; right:0; bottom:0; z-index:0; }
-
-.sheet { position:fixed; left:0; right:0; bottom:0; z-index:200; background:var(--card); border-radius:20px 20px 0 0; border-top:1px solid var(--border); transition:transform .35s cubic-bezier(0.21, 0.61, 0.35, 1); max-height:92vh; display:flex; flex-direction:column; transform:translateY(100%); }
-.sheet-peek { transform:translateY(calc(100% - 158px)); }
-.sheet-half { transform:translateY(30%); } 
-.sheet-full { transform:translateY(0); }
-.handle-wrap { display:flex; justify-content:center; padding:10px 0 10px; cursor:pointer; flex-shrink:0; }
-.handle { width:36px; height:4px; background:var(--muted); border-radius:2px; }
-.full-area { flex:1; overflow-y:auto; padding:0 16px 50px; display:none; } 
-.sheet-half .full-area, .sheet-full .full-area { display:block; }
-
-.insight-box { background:rgba(0,229,255,0.06); border:1px solid rgba(0,229,255,0.2); border-radius:12px; padding:16px; margin-bottom:12px; }
-
-/* 모달 리포트 */
-.modal { position:fixed; inset:0; z-index:400; background:var(--bg); transform:translateY(100%); transition:transform 0.4s ease; overflow-y:auto; padding:20px; padding-top:60px; padding-bottom:50px;}
-.modal.show { transform:translateY(0); }
-.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
-.close-btn { font-size:1.5rem; color:var(--dim); cursor:pointer; }
-.report-sec { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:16px; }
-.report-t { font-size:0.95rem; font-weight:900; margin-bottom:15px; color:var(--cyan); display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border); padding-bottom:10px; }
-.data-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:0.85rem; }
-.data-lbl { color:var(--dim); }
-.data-val { font-weight:700; color:var(--text); text-align:right; }
-.data-highlight { font-size:1.2rem; font-weight:900; color:var(--yellow); }
-
-.loader { position:fixed; inset:0; background:rgba(7,9,15,.85); z-index:500; display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .22s; }
-.loader.show { opacity:1; pointer-events:all; }
-.lring { width:40px; height:40px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--cyan); animation:spin .75s linear infinite; }
-@keyframes spin { to { transform:rotate(360deg); } }
-.toast { position:fixed; bottom:170px; left:50%; transform:translateX(-50%) translateY(16px); background:var(--card2); border:1px solid var(--green); border-radius:10px; padding:10px 18px; font-size:.78rem; z-index:600; opacity:0; transition:all .28s; }
-.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-</style>
-</head>
-<body>
-
-<div id="onboarding">
-  <div class="ob-header">
-    <div class="ob-logo"><div class="ob-logo-dot"></div>상권레이더 Pro</div>
-    <div class="progress-bar">
-      <div class="p-dot active" id="p1"></div><div class="p-dot" id="p2"></div><div class="p-dot" id="p3"></div><div class="p-dot" id="p4"></div>
-    </div>
-  </div>
-
-  <div class="step-container active" id="step1">
-    <div class="step-title">어떤 업종의 창업을<br>준비 중이신가요?</div>
-    <div class="narrative">"업종마다 필요 면적과 객단가가 다릅니다. 원하시는 카테고리를 선택해 주세요."</div>
-    <div class="opt-grid">
-      <div class="opt-btn" onclick="selectOpt(1, 'I', 'I12', '카페/디저트', this)">☕ 카페/디저트</div>
-      <div class="opt-btn" onclick="selectOpt(1, 'I', 'I01', '한식 식당', this)">🍚 한식 식당</div>
-      <div class="opt-btn" onclick="selectOpt(1, 'I', 'I04', '양식/레스토랑', this)">🍝 양식/레스토랑</div>
-      <div class="opt-btn" onclick="selectOpt(1, 'I', 'I03', '일식/초밥', this)">🍣 일식/초밥</div>
-      <div class="opt-btn" onclick="selectOpt(1, 'I', 'I02', '중식 식당', this)">🍜 중식 식당</div>
-      <div class="opt-btn" onclick="selectOpt(1, 'I', 'I05', '치킨/호프', this)">🍗 치킨/호프</div>
-      <div class="opt-btn" onclick="selectOpt(1, 'S', 'S01', '미용실/헤어', this)">✂️ 미용실/헤어</div>
-      <div class="opt-btn" onclick="selectOpt(1, 'P', 'P01', '헬스/필라테스', this)">💪 헬스/필라테스</div>
-      <div class="opt-btn" onclick="selectOpt(1, 'R', 'R01', '입시/보습학원', this)">📚 입시/보습학원</div>
-      <div class="opt-btn" onclick="selectOpt(1, 'G', 'G02', '편의점/마트', this)">🏪 편의점/마트</div>
-    </div>
-    <button class="action-btn" id="btn-next1" onclick="nextStep(2)">다음으로 (1/4)</button>
-  </div>
-
-  <div class="step-container" id="step2">
-    <div class="step-title">초기 자본금(예산)은<br>어느 정도인가요?</div>
-    <div class="narrative">"보증금과 시설/인테리어를 포함한 총 가용 예산을 골라주세요."</div>
-    <div class="opt-grid">
-      <div class="opt-btn" onclick="selectOpt(2, '3000', '', '3천만 원', this)">3,000만 원 이하</div>
-      <div class="opt-btn" onclick="selectOpt(2, '5000', '', '5천만 원', this)">5,000만 원 내외</div>
-      <div class="opt-btn" onclick="selectOpt(2, '10000', '', '1억 원', this)">1억 원 내외</div>
-      <div class="opt-btn" onclick="selectOpt(2, '15000', '', '1.5억 원', this)">1억 5천만 원</div>
-      <div class="opt-btn" onclick="selectOpt(2, '20000', '', '2억 원', this)">2억 원 내외</div>
-      <div class="opt-btn" onclick="selectOpt(2, '30000', '', '3억 원', this)">3억 원 이상</div>
-      <div class="opt-btn" onclick="selectOpt(2, '50000', '', '5억 원', this)">5억 원 이상</div>
-      <div class="opt-btn" onclick="selectOpt(2, '99999', '', '제한없음', this)">자본금 여유 있음</div>
-    </div>
-    <button class="action-btn" id="btn-next2" onclick="nextStep(3)">다음으로 (2/4)</button>
-  </div>
-
-  <div class="step-container" id="step3">
-    <div class="step-title">어떤 고객층을<br>중점 공략하시겠습니까?</div>
-    <div class="narrative">"상권마다 거주/근무하는 인구 비율이 다릅니다. 핵심 타겟을 알려주세요."</div>
-    <div class="opt-grid">
-      <div class="opt-btn" onclick="selectOpt(3, 'TEEN', '', '10대 학생', this)">🎒 10대 학생</div>
-      <div class="opt-btn" onclick="selectOpt(3, 'F2030', '', '2030 여성', this)">👩‍🦰 2030 여성</div>
-      <div class="opt-btn" onclick="selectOpt(3, 'M2030', '', '2030 남성', this)">👨‍🦱 2030 남성</div>
-      <div class="opt-btn" onclick="selectOpt(3, 'WORKER', '', '3040 직장인', this)">💼 3040 직장인</div>
-      <div class="opt-btn" onclick="selectOpt(3, 'FAMILY', '', '가족/주부', this)">👨‍👩‍👧 4050 가족/주부</div>
-      <div class="opt-btn" onclick="selectOpt(3, 'SENIOR', '', '60대 이상 시니어', this)">🧓 60대 시니어</div>
-    </div>
-    <button class="action-btn" id="btn-next3" onclick="nextStep(4)">다음으로 (3/4)</button>
-  </div>
-
-  <div class="step-container" id="step4">
-    <div class="step-title">주로 탐색할<br>지역을 골라주세요.</div>
-    <div class="narrative">"전국 어디든 가능합니다. 대략적인 지역을 선택하시면 상세 위치는 지도에서 바로 검색할 수 있습니다."</div>
-    <div class="opt-grid">
-      <div class="opt-btn" onclick="selectOpt(4, 'SEOUL', '', '서울', this)">🏢 서울특별시</div>
-      <div class="opt-btn" onclick="selectOpt(4, 'GYEONGGI', '', '경기', this)">🏡 경기도 (수원 기준)</div>
-      <div class="opt-btn" onclick="selectOpt(4, 'INCHEON', '', '인천', this)">✈️ 인천광역시</div>
-      <div class="opt-btn" onclick="selectOpt(4, 'BUSAN', '', '부산', this)">🌊 부산광역시</div>
-      <div class="opt-btn" onclick="selectOpt(4, 'DAEGU', '', '대구', this)">🍎 대구광역시</div>
-      <div class="opt-btn" onclick="selectOpt(4, 'DAEJEON', '', '대전', this)">🍞 대전광역시</div>
-      <div class="opt-btn" onclick="selectOpt(4, 'GWANGJU', '', '광주', this)">🌶️ 광주광역시</div>
-      <div class="opt-btn" onclick="selectOpt(4, 'SEJONG', '', '세종', this)">🌳 세종특별자치시</div>
-    </div>
-    <div class="opt-grid" style="grid-template-columns:1fr;">
-      <div class="opt-btn" style="border-color:var(--cyan); color:var(--cyan);" onclick="selectOpt(4, 'CUSTOM', '', '지도 직접 검색', this)">📍 그 외 지역 (지도에서 직접 검색할게요)</div>
-    </div>
-    <button class="action-btn" id="btn-next4" onclick="finishOnboarding()">3년치 데이터 분석 스캔 시작</button>
-  </div>
-</div>
-
-<div class="topnav">
-  <div class="logo"><div class="logo-dot"></div>상권레이더</div>
-  <div class="search-bar"><input type="text" id="searchInput" placeholder="동, 구, 시 이름으로 검색..."></div>
-</div>
-<div id="kakaoMap"></div>
-<div class="sheet" id="sheet">
-  <div class="handle-wrap" id="handleWrap"><div class="handle"></div></div>
-  <div class="full-area" id="fullArea"></div>
-</div>
-
-<div class="modal" id="reportModal">
-  <div class="modal-header">
-    <h1 style="font-size:1.2rem; font-weight:900;">AI 정밀 상권 컨설팅</h1>
-    <div class="close-btn" onclick="closeReport()">✕</div>
-  </div>
-  <div id="reportContent"></div>
-</div>
-
-<div class="loader" id="loader"><div class="lring"></div><div id="ltxt" style="font-size:.8rem; color:var(--dim); margin-top:10px;">빅데이터 스캔 중...</div></div>
-<div class="toast" id="toast"><div id="thead" style="font-weight:700; color:var(--green); font-size:.7rem;">✓</div><div id="tmsg"></div></div>
-
-<script>
-let kakaoOk = false, map = null, sheetSt = 'peek', toastTm = null;
-let storeMarkers = [];
-let userPrefs = { lcls: '', mcls: '', catName: '', budget: 0, target: '', region: '' };
-let currentLoc = { lat: 37.5665, lng: 126.9780, name: '서울시청', addr: '서울 중구 태평로1가' };
-let analysisData = null;
-
-function selectOpt(step, val1, val2, label, btn) {
-  document.getElementById(`step${step}`).querySelectorAll('.opt-btn').forEach(b => b.classList.remove('sel'));
-  btn.classList.add('sel');
-  document.getElementById(`btn-next${step}`).classList.add('active');
-  if(step===1){ userPrefs.lcls=val1; userPrefs.mcls=val2; userPrefs.catName=label; }
-  if(step===2){ userPrefs.budget=parseInt(val1); }
-  if(step===3){ userPrefs.target=val1; }
-  if(step===4){ userPrefs.region=val1; }
-}
-
-function nextStep(s){ 
-  document.querySelectorAll('.step-container').forEach(c=>c.classList.remove('active')); 
-  document.getElementById(`step${s}`).classList.add('active'); 
-  document.getElementById(`p${s}`).classList.add('active'); 
-}
-
-function finishOnboarding(){
-  document.getElementById('onboarding').classList.add('hidden');
+const App = () => {
+  // --- 상태 관리 ---
+  const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('gemini_user_api_key') || '');
+  const [promptsText, setPromptsText] = useState('');
+  const [tasks, setTasks] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [rawViewImage, setRawViewImage] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
   
-  const regions = {
-    'SEOUL': {lat:37.5665, lng:126.9780, name:'서울시청', addr:'서울 중구'},
-    'GYEONGGI': {lat:37.2750, lng:127.0092, name:'수원시청', addr:'경기 수원시'},
-    'INCHEON': {lat:37.4563, lng:126.7052, name:'인천시청', addr:'인천 남동구'},
-    'BUSAN': {lat:35.1796, lng:129.0756, name:'부산시청', addr:'부산 연제구'},
-    'DAEGU': {lat:35.8714, lng:128.6014, name:'대구시청', addr:'대구 중구'},
-    'DAEJEON': {lat:36.3504, lng:127.3845, name:'대전시청', addr:'대전 서구'},
-    'GWANGJU': {lat:35.1595, lng:126.8526, name:'광주시청', addr:'광주 서구'},
-    'SEJONG': {lat:36.4800, lng:127.2890, name:'세종시청', addr:'세종특별자치시'},
-    'CUSTOM': {lat:37.5665, lng:126.9780, name:'서울', addr:'원하시는 지역을 검색하세요'}
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [aspectRatio, setAspectRatio] = useState('1:1'); 
+  const [modelType, setModelType] = useState('pro'); // pro, v2
+  
+  const fileInputRef = useRef(null);
+  const abortControllerRef = useRef(null);
+
+  // API 키가 변경될 때마다 브라우저 로컬 스토리지에 저장
+  useEffect(() => {
+    localStorage.setItem('gemini_user_api_key', userApiKey);
+  }, [userApiKey]);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 5000);
   };
-  
-  if (regions[userPrefs.region]) currentLoc = regions[userPrefs.region];
-  loadKakao();
-}
 
-async function fetchAll(lat, lng) {
-  const lawdCd = await new Promise(r => {
-    if(!kakaoOk) return r('11680');
-    new kakao.maps.services.Geocoder().coord2RegionCode(lng, lat, (res, st) => r(st==='OK' ? res[0].code.substring(0,5) : '11680'));
-  });
+  const stats = {
+    total: tasks.length,
+    completed: tasks.filter(t => t.status === 'success').length,
+    failed: tasks.filter(t => t.status === 'error').length,
+    pending: tasks.filter(t => ['pending', 'processing'].includes(t.status)).length,
+  };
 
-  const query = `lat=${lat}&lng=${lng}&lcls=${userPrefs.lcls}&mcls=${userPrefs.mcls}&budget=${userPrefs.budget}&lawdCd=${lawdCd}`;
-  
-  try {
-    const res = await fetch(`/api/analyze?${query}`);
-    const json = await res.json();
-    if(json.success) {
-      analysisData = json.data;
-      return { bizCount: json.data.bizCount, isRealData: json.data.isRealData };
-    } else throw new Error("API Error");
-  } catch (e) { 
-    // Vercel 연동 실패 혹은 데이터 구조 변경 시 프론트가 뻗지 않도록 방어 코드 추가
-    analysisData = { 
-      bizCount: 0, monthlyRent: 0, targetSales: 0, customersNeededPerDay: 0, unitPrice: 0, score: 0, isRealData: false, 
-      raw: { totalTradeCount: 0, avgArea: 0, avgTradePrice: 0 }, 
-      analysis: { summary: "서버 연동 오류", actionItems: ["일시적인 네트워크 오류입니다. 다시 시도해주세요."] } 
-    };
-    return { bizCount: 0, isRealData: false }; 
-  }
-}
+  // 1. 브라우저 단에서 이미지 리사이징 (API 전송 용량 최적화)
+  const resizeImage = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800; 
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
 
-async function processLocation(lat, lng, name, addr) {
-  currentLoc = { lat, lng, name, addr };
-  if(kakaoOk) { map.setCenter(new kakao.maps.LatLng(lat, lng)); drawCircle(lat,lng); }
-  
-  load(2000, async () => {
-    const result = await fetchAll(lat, lng);
-    renderSheet(name, addr, result.bizCount, result.isRealData);
-    setSt('half');
-    toast(`데이터 스캔 완료`);
-  });
-}
+          if (width > height) {
+            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+          } else {
+            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.9));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
 
-// ── 리포트 렌더링 (에러 방어 및 순서 재배치) ──
-function openReport() {
-  if (!analysisData) return;
-  
-  try {
-    const modal = document.getElementById('reportModal');
-    const content = document.getElementById('reportContent');
-    const d = analysisData; 
-    
-    // 방어 코드: d.raw나 d.analysis가 없더라도 터지지 않도록 기본값 할당
-    const raw = d.raw || { totalTradeCount: 0, avgArea: 0, avgTradePrice: 0 };
-    const analysis = d.analysis || { summary: "데이터 분석 중 문제가 발생했습니다.", actionItems: ["재시도 해주세요."] };
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
 
-    // 1. 공공데이터 원본 블록
-    const rawDataBlock = d.isRealData ? `
-      <div class="data-row">
-        <span class="data-lbl">최근 3년 누적 거래 건수</span>
-        <span class="data-val">${raw.totalTradeCount}건 발견</span>
-      </div>
-      <div class="data-row">
-        <span class="data-lbl">거래 상가 평균 전용면적</span>
-        <span class="data-val">${raw.avgArea} ㎡ (약 ${Math.round((raw.avgArea || 0) / 3.3)}평)</span>
-      </div>
-      <div class="data-row" style="margin-bottom:0;">
-        <span class="data-lbl">평균 매매 총액</span>
-        <span class="data-val">${(raw.avgTradePrice || 0).toLocaleString()}만 원</span>
-      </div>
-    ` : `
-      <div style="background:rgba(255,71,87,0.1); border:1px solid rgba(255,71,87,0.3); padding:16px; border-radius:12px; text-align:center;">
-        <div style="color:var(--red); font-weight:900; margin-bottom:6px;">최근 3년 상업용 실거래 데이터 없음</div>
-        <div style="font-size:0.8rem; color:var(--text); line-height:1.4;">매매 거래가 멈춰있는 상권이거나 신규 택지지구일 수 있습니다.</div>
-      </div>
-    `;
-
-    content.innerHTML = `
-      <div class="report-sec">
-        <div class="report-t">📊 공공데이터 원본 요약</div>
-        <div class="data-row" style="border-bottom:1px dashed var(--border); padding-bottom:12px;">
-          <span class="data-lbl">반경 500m 내 [${userPrefs.catName}] 매장 수</span>
-          <span class="data-val" style="color:var(--cyan); font-size:1rem;">총 ${d.bizCount || 0}개 점포</span>
-        </div>
-        ${rawDataBlock}
-      </div>
-
-      <div class="report-sec" style="border-color:var(--cyan);">
-        <div class="report-t" style="color:var(--cyan);">🏢 현실적 비용 및 생존 마지노선</div>
-        <div class="data-row">
-          <span class="data-lbl">평당 매매가 환산 시세</span>
-          <span class="data-val">${(d.realEstatePyeongPrice || 0).toLocaleString()}만 원 / 평</span>
-        </div>
-        <div style="background:rgba(255,191,36,0.1); padding:16px; border-radius:12px; text-align:center; margin-bottom:16px;">
-          <div style="font-size:0.75rem; color:var(--yellow); font-weight:700; margin-bottom:6px;">15평 기준 추정 임대료 (건물수익률 5%)</div>
-          <div class="data-highlight">월 ${(d.monthlyRent || 0).toLocaleString()}만 원</div>
-        </div>
-        <p style="font-size:0.8rem; color:var(--dim); line-height:1.5; margin-bottom:16px;">
-          임대료가 전체 매출의 10%를 넘지 않아야 사업이 유지됩니다.
-        </p>
-        <div class="data-row">
-          <span class="data-lbl">숨만 쉬어도 필요한 최소 매출</span>
-          <span class="data-val" style="color:var(--cyan); font-weight:900; font-size:1.1rem;">${(d.targetSales || 0).toLocaleString()}만 원</span>
-        </div>
-        <div style="background:var(--card2); padding:16px; border-radius:8px; margin-top:10px;">
-          <span style="font-size:0.8rem; color:var(--text);">☕ 적자를 피하려면 하루에 무조건 <b>${d.customersNeededPerDay || 0}명</b>(객단가 ${(d.unitPrice || 0).toLocaleString()}원)의 손님을 받아야 합니다.</span>
-        </div>
-      </div>
-
-      <div class="report-sec" style="background:var(--cyan); color:#000;">
-        <div style="font-size:0.8rem; font-weight:900; margin-bottom:8px; opacity:0.8;">🤖 AI 최종 분석 결론</div>
-        <div style="font-size:1.1rem; font-weight:900; line-height:1.4; margin-bottom:12px;">"${analysis.summary}"</div>
-        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.1); padding:10px 14px; border-radius:8px;">
-          <span style="font-weight:700;">AI 종합 매력도 점수</span>
-          <span style="font-size:1.4rem; font-weight:900;">${d.score || 0}점</span>
-        </div>
-      </div>
-
-      <div class="report-sec" style="border-color:var(--yellow);">
-        <div class="report-t" style="color:var(--yellow);">💡 사장님을 위한 팩트 기반 행동 지침</div>
-        <ul style="padding-left:20px; font-size:0.85rem; line-height:1.7; color:var(--text);">
-          ${(analysis.actionItems || []).map(item => `<li style="margin-bottom:10px;">${item}</li>`).join('')}
-        </ul>
-      </div>
-    `;
-    modal.classList.add('show');
-  } catch (error) {
-    console.error("리포트 렌더링 에러:", error);
-    alert("리포트를 여는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
-  }
-}
-
-function renderSheet(name, addr, bizCount, isRealData) {
-  document.getElementById('fullArea').innerHTML = `
-    <div style="margin-bottom:16px;">
-      <h2 style="font-size:1.1rem; font-weight:900;">${name} 상권 데이터 수집 완료</h2>
-      <p style="color:var(--dim); font-size:0.7rem;">${addr}</p>
-    </div>
-    <div class="insight-box">
-      <div style="font-size:0.65rem; color:var(--cyan); font-weight:900; margin-bottom:6px;">공공데이터 스캔 현황</div>
-      <p style="font-size:0.8rem; line-height:1.5; margin-bottom:12px;">선택하신 [${userPrefs.catName}] 매장 <b>${bizCount}개</b> 발견.<br>최근 3년 부동산 실거래 데이터 교차 검증 완료.</p>
-      <button style="width:100%; padding:14px; background:var(--cyan); color:#000; border:none; border-radius:8px; font-weight:900; font-size:0.95rem; cursor:pointer;" onclick="openReport()">
-        📊 최종 종합 분석 리포트 확인
-      </button>
-    </div>
-  `;
-}
-
-function loadKakao() {
-  const sc = document.createElement('script');
-  sc.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${window.KAKAO_JS_KEY}&libraries=services&autoload=false`;
-  sc.onload = () => kakao.maps.load(() => { 
-    kakaoOk = true; 
-    map = new kakao.maps.Map(document.getElementById('kakaoMap'), { center: new kakao.maps.LatLng(currentLoc.lat, currentLoc.lng), level:5 }); 
-    kakao.maps.event.addListener(map, 'click', e => processLocation(e.latLng.getLat(), e.latLng.getLng(), "선택 지점", "사용자 지정 위치")); 
-    const ps = new kakao.maps.services.Places();
-    document.getElementById('searchInput').onkeydown = e => {
-      if(e.key === 'Enter') ps.keywordSearch(e.target.value, (data, st) => {
-        if(st === kakao.maps.services.Status.OK) processLocation(data[0].y, data[0].x, data[0].place_name, data[0].address_name);
+    showToast('이미지 처리 중...');
+    const newImages = [];
+    for (const file of files) {
+      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+      const optimizedDataUrl = await resizeImage(file);
+      newImages.push({ 
+        id: crypto.randomUUID(), 
+        name: nameWithoutExt, 
+        dataUrl: optimizedDataUrl 
       });
-    };
-    processLocation(currentLoc.lat, currentLoc.lng, currentLoc.name, currentLoc.addr); 
-  });
-  document.head.appendChild(sc);
-}
-function drawCircle(lat, lng) { if(window._c) window._c.setMap(null); window._c = new kakao.maps.Circle({ map, center: new kakao.maps.LatLng(lat,lng), radius:500, strokeWeight:2, strokeColor:'#00e5ff', strokeStyle:'dashed', fillColor:'#00e5ff', fillOpacity:0.05 }); }
-function closeReport() { document.getElementById('reportModal').classList.remove('show'); }
-function setSt(s) { sheetSt = s; document.getElementById('sheet').className = `sheet sheet-${s}`; }
-function load(ms, cb) { document.getElementById('loader').classList.add('show'); setTimeout(async () => { await cb(); document.getElementById('loader').classList.remove('show'); }, ms); }
-function toast(m) { const t = document.getElementById('toast'); document.getElementById('tmsg').textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
-document.getElementById('handleWrap').onclick = () => setSt(sheetSt==='peek'?'half':sheetSt==='half'?'full':'peek');
-</script>
-</body>
-</html>
+    }
+    setUploadedImages(prev => [...prev, ...newImages]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeUploadedImage = (id) => {
+    setUploadedImages(prev => prev.filter(img => img.id !== id));
+  };
+
+  // 2. 여러 장의 이미지를 하나의 캔버스에 가로로 이어 붙이는 합성(Stitching) 함수
+  const stitchImages = async (base64Urls) => {
+    if (base64Urls.length === 1) return base64Urls[0]; // 1장이면 그대로 반환
+
+    const loadedImages = await Promise.all(base64Urls.map(url => {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.src = url;
+      });
+    }));
+
+    const totalWidth = loadedImages.reduce((sum, img) => sum + img.width, 0);
+    const maxHeight = Math.max(...loadedImages.map(img => img.height));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = totalWidth;
+    canvas.height = maxHeight;
+    const ctx = canvas.getContext('2d');
+
+    let currentX = 0;
+    loadedImages.forEach(img => {
+      ctx.drawImage(img, currentX, 0);
+      currentX += img.width;
+    });
+
+    return canvas.toDataURL('image/jpeg', 0.9);
+  };
+
+  // 3. 이미지 생성 API 호출 (직접 이미지 참조 방식)
+  const generateImageWithRetry = async (finalPrompt, referenceBase64, signal) => {
+    // 사용자가 키를 입력했으면 그것을 쓰고, 없으면 기본 환경 키 사용
+    const activeKey = userApiKey.trim() || defaultApiKey;
+    const targetModel = modelType === 'pro' ? 'imagen-4.0-generate-001' : 'imagen-3.0-generate-001';
+    
+    const delays = [1000, 2000, 4000];
+    
+    for (let i = 0; i <= delays.length; i++) {
+      try {
+        if (signal?.aborted) throw new Error('Aborted');
+
+        // 페이로드(데이터) 구성
+        const instanceData = { prompt: finalPrompt };
+        
+        // 참조 이미지가 있다면 원본 이미지 데이터를 Base64로 직접 포함시킴
+        if (referenceBase64) {
+          const b64Data = referenceBase64.split(',')[1];
+          instanceData.image = { bytesBase64Encoded: b64Data };
+        }
+
+        const payload = {
+          instances: instanceData,
+          parameters: { sampleCount: 1 }
+        };
+        if (aspectRatio !== '1:1') payload.parameters.aspectRatio = aspectRatio;
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:predict?key=${activeKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal
+          }
+        );
+
+        if (!response.ok) {
+          const errText = await response.text();
+          let errMsg = `API 에러 (${response.status})`;
+          try { const data = JSON.parse(errText); errMsg = data.error?.message || errMsg; } catch(e){}
+          
+          if (response.status === 401 || response.status === 403) {
+             throw new Error(`인증 실패 (401/403). 상단에 유효한 개인 API 키를 입력해주세요. 상세: ${errMsg}`);
+          }
+          throw new Error(errMsg);
+        }
+
+        const data = await response.json();
+        if (data.predictions && data.predictions[0] && data.predictions[0].bytesBase64Encoded) {
+          return `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`;
+        } else {
+          throw new Error("결과물에 이미지 데이터가 없습니다.");
+        }
+
+      } catch (error) {
+        if (signal?.aborted) throw new Error('작업 취소됨');
+        if (i === delays.length) throw error;
+        await new Promise(resolve => setTimeout(resolve, delays[i]));
+      }
+    }
+  };
+
+  const handleStartGeneration = async () => {
+    const newPrompts = promptsText.split('\n').map(p => p.trim()).filter(p => p.length > 0);
+    if (newPrompts.length === 0 && tasks.length === 0) return;
+
+    if (!userApiKey.trim() && promptsText.includes('@[')) {
+      showToast('⚠️ 참조 기능을 사용하려면 개인 API 키 입력이 필수입니다!');
+    }
+
+    let currentTasks = [...tasks];
+    if (newPrompts.length > 0) {
+      const newTasks = newPrompts.map(prompt => ({
+        id: crypto.randomUUID(),
+        originalPrompt: prompt,
+        finalPrompt: prompt,
+        status: 'pending',
+        imageUrl: null,
+        error: null,
+        matchedImages: []
+      }));
+      currentTasks = [...currentTasks, ...newTasks];
+      setTasks(currentTasks);
+      setPromptsText('');
+    }
+
+    setIsProcessing(true);
+    abortControllerRef.current = new AbortController();
+
+    for (let i = 0; i < currentTasks.length; i++) {
+      if (abortControllerRef.current.signal.aborted) break;
+
+      const task = currentTasks[i];
+      if (task.status === 'success') continue;
+
+      let workingPrompt = task.originalPrompt;
+      const matchedImgs = [];
+      const matches = workingPrompt.match(/@\[(.*?)\]/g);
+
+      // 프롬프트 내에 @[단어] 가 있는지 확인하여 이미지 추출
+      if (matches && uploadedImages.length > 0) {
+        for (const match of matches) {
+          const keyword = match.replace('@[', '').replace(']', '');
+          const foundImg = uploadedImages.find(img => img.name.includes(keyword));
+          
+          if (foundImg) {
+            matchedImgs.push(foundImg);
+            // Imagen 모델이 텍스트로 참조 여부를 인지하도록 일반적인 문구로 치환
+            workingPrompt = workingPrompt.replace(match, "[referenced style/subject]");
+          } else {
+             workingPrompt = workingPrompt.replace(match, "");
+          }
+        }
+      }
+
+      setTasks(prev => prev.map(t => 
+        t.id === task.id ? { ...t, status: 'processing', finalPrompt: workingPrompt, matchedImages: matchedImgs, error: null } : t
+      ));
+
+      try {
+        let stitchedBase64 = null;
+        if (matchedImgs.length > 0) {
+          const base64Urls = matchedImgs.map(img => img.dataUrl);
+          stitchedBase64 = await stitchImages(base64Urls);
+        }
+
+        const imageUrl = await generateImageWithRetry(workingPrompt, stitchedBase64, abortControllerRef.current.signal);
+        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'success', imageUrl } : t));
+      } catch (error) {
+        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'error', error: error.message } : t));
+      }
+    }
+
+    setIsProcessing(false);
+  };
+
+  const handleStop = () => {
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    setIsProcessing(false);
+  };
+
+  const handleClear = () => {
+    setTasks([]);
+    setPromptsText('');
+  };
+
+  const handleRetryFailed = () => {
+    setTasks(prev => prev.map(t => t.status === 'error' ? { ...t, status: 'pending', error: null } : t));
+    setTimeout(() => { if (!isProcessing) handleStartGeneration(); }, 100);
+  };
+
+  // --- 다운로드 유틸리티 ---
+  const getFileName = (prompt, index = '') => {
+    const safePrompt = prompt.substring(0, 20).replace(/[^a-z0-9가-힣]/gi, '_');
+    return `${index ? index + '_' : ''}${safePrompt}.png`;
+  };
+
+  const base64ToBlob = (base64Url) => {
+    const parts = base64Url.split(',');
+    const mime = parts[0].match(/:(.*?);/)[1];
+    const bstr = atob(parts[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) u8arr[n] = bstr.charCodeAt(n);
+    return new Blob([u8arr], { type: mime });
+  };
+
+  const handleDownloadAll = async () => {
+    const successfulTasks = tasks.map((t, index) => ({...t, originalIndex: index + 1})).filter(t => t.status === 'success');
+    if (successfulTasks.length === 0) return;
+
+    showToast('일괄 다운로드 시작...');
+    try {
+      const JSZip = (await import('https://esm.sh/jszip')).default;
+      const zip = new JSZip();
+
+      successfulTasks.forEach(task => {
+        const base64Data = task.imageUrl.split(',')[1];
+        zip.file(getFileName(task.originalPrompt, task.originalIndex), base64Data, { base64: true });
+      });
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = window.URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `대량생성이미지_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      showToast('✅ 일괄 다운로드(ZIP) 완료!');
+    } catch (err) {
+      showToast('❌ 압축 파일 생성 실패');
+    }
+  };
+
+  const handleShare = async (task) => {
+    try {
+      const blob = base64ToBlob(task.imageUrl);
+      const file = new File([blob], getFileName(task.originalPrompt), { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: '이미지 저장', text: task.originalPrompt });
+      } else {
+        showToast('공유 기능을 지원하지 않는 기기입니다.');
+      }
+    } catch (err) {}
+  };
+
+  const getAspectRatioClass = () => {
+    if (aspectRatio === '16:9') return 'aspect-video';
+    if (aspectRatio === '9:16') return 'aspect-[9/16]';
+    return 'aspect-square';
+  };
+
+  if (rawViewImage) {
+    return (
+      <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center cursor-pointer" onClick={() => setRawViewImage(null)}>
+        <img src={rawViewImage.imageUrl} alt="Raw View" className="max-w-full max-h-[90vh] object-contain select-none" draggable="false" />
+        <div className="absolute top-4 text-center text-white bg-black/60 px-4 py-2 rounded-lg pointer-events-none animate-pulse">
+          📸 화면을 캡처하세요! (터치 시 복귀)
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-900 p-4 md:p-8 font-sans">
+      <div className="max-w-6xl mx-auto space-y-6">
+        
+        {/* 헤더 및 컨트롤 (API 키 입력란 포함) */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <ImageIcon className="text-blue-600" /> 대량 프롬프트 이미지 생성기
+              </h1>
+              <p className="text-gray-500 mt-1 text-sm">원본 이미지 직접 참조 모드 (Direct Image-to-Image)</p>
+            </div>
+            
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Key className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="password"
+                  value={userApiKey}
+                  onChange={(e) => setUserApiKey(e.target.value)}
+                  placeholder="본인의 Gemini API 키 입력"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none w-48 sm:w-64 transition-all"
+                  title="참조 기능을 사용하려면 개인 API 키를 입력하세요. 키는 브라우저에만 저장됩니다."
+                />
+              </div>
+
+              <select 
+                value={modelType} 
+                onChange={(e) => setModelType(e.target.value)}
+                className="bg-gray-100 border-none text-sm font-medium rounded-xl px-4 py-2 focus:ring-2 focus:ring-yellow-400 outline-none cursor-pointer"
+                disabled={isProcessing}
+              >
+                <option value="pro">🍌 나노바나나 프로</option>
+                <option value="v2">🍌 나노바나나 2</option>
+              </select>
+
+              <select 
+                value={aspectRatio} 
+                onChange={(e) => setAspectRatio(e.target.value)}
+                className="bg-gray-100 border-none text-sm font-medium rounded-xl px-4 py-2 focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer"
+                disabled={isProcessing}
+              >
+                <option value="1:1">1:1 (정방형)</option>
+                <option value="16:9">16:9 (가로)</option>
+                <option value="9:16">9:16 (세로)</option>
+              </select>
+
+              {isProcessing ? (
+                <button onClick={handleStop} className="flex items-center gap-2 bg-red-100 text-red-700 px-4 py-2 rounded-xl hover:bg-red-200 transition font-medium">
+                  <Loader2 className="w-4 h-4 animate-spin" /> 중지
+                </button>
+              ) : (
+                <button onClick={handleStartGeneration} disabled={!promptsText.trim() && tasks.filter(t => t.status === 'pending').length === 0} className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-xl hover:bg-blue-700 disabled:bg-gray-300 transition font-medium">
+                  <Play className="w-4 h-4" /> 시작
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 메인 콘텐츠 영역 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full">
+            <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+              <div className="flex justify-between items-center mb-3">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <ImagePlus className="w-4 h-4 text-blue-500" />
+                  참조 이미지 추가 (원본 직접 전송)
+                </label>
+                <button onClick={() => fileInputRef.current?.click()} className="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg font-medium hover:bg-blue-200 transition">
+                  + 이미지 선택
+                </button>
+                <input type="file" multiple accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+              </div>
+              
+              {uploadedImages.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {uploadedImages.map(img => (
+                    <div key={img.id} className="relative group bg-white p-1 rounded-lg border border-gray-200 shadow-sm flex items-center gap-2 pr-2">
+                      <img src={img.dataUrl} alt={img.name} className="w-10 h-10 object-cover rounded-md" />
+                      <span className="text-xs font-bold text-gray-700">@[{img.name}]</span>
+                      <button onClick={() => removeUploadedImage(img.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 text-center py-2">⚠️ 참조 기능을 사용하려면 우측 상단에 API 키를 입력해야 합니다.</p>
+              )}
+            </div>
+
+            <label className="block text-sm font-semibold text-gray-700 mb-2">프롬프트 대량 입력 (한 줄에 하나씩)</label>
+            <textarea
+              value={promptsText}
+              onChange={(e) => setPromptsText(e.target.value)}
+              placeholder="예시:&#10;햇살이 비치는 거실, @[초미_기본]이 소파에 앉아 책을 읽는 모습&#10;사이버펑크 도시 배경, @[달빛] 아래 서 있는 검객"
+              className="w-full flex-grow min-h-[200px] p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-y transition text-sm"
+              disabled={isProcessing}
+            />
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">진행 상황</h3>
+            <div className="space-y-4 flex-grow">
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <span className="text-gray-600 font-medium">전체</span>
+                <span className="text-xl font-bold">{stats.total}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-green-50 rounded-xl border border-green-100">
+                <span className="text-green-700 font-medium">완료</span>
+                <span className="text-xl font-bold text-green-700">{stats.completed}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-red-50 rounded-xl border border-red-100">
+                <span className="text-red-700 font-medium">실패</span>
+                <span className="text-xl font-bold text-red-700">{stats.failed}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-blue-50 rounded-xl border border-blue-100">
+                <span className="text-blue-700 font-medium">대기 / 생성 중</span>
+                <span className="text-xl font-bold text-blue-700">{stats.pending}</span>
+              </div>
+            </div>
+            {stats.failed > 0 && !isProcessing && (
+              <button onClick={handleRetryFailed} className="mt-4 w-full flex justify-center items-center gap-2 bg-white border-2 border-red-200 text-red-600 px-4 py-2 rounded-xl hover:bg-red-50 transition font-medium">
+                <RefreshCw className="w-4 h-4" /> 실패 재시도
+              </button>
+            )}
+            <button onClick={handleClear} disabled={isProcessing || tasks.length === 0} className="mt-2 w-full flex justify-center items-center gap-2 bg-gray-100 text-gray-600 px-4 py-2 rounded-xl hover:bg-gray-200 transition font-medium text-sm">
+              <Trash2 className="w-4 h-4" /> 결과 비우기
+            </button>
+          </div>
+        </div>
+
+        {/* 갤러리 */}
+        {tasks.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-gray-800">결과 갤러리</h2>
+              {stats.completed > 0 && (
+                <button onClick={handleDownloadAll} className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-xl hover:bg-gray-900 transition font-medium text-sm">
+                  <Download className="w-4 h-4" /> ZIP 일괄 다운로드
+                </button>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {tasks.map((task, index) => (
+                <div key={task.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 flex flex-col">
+                  
+                  {/* 이미지 영역 */}
+                  <div className={`relative bg-gray-100 flex items-center justify-center border-b border-gray-100 ${getAspectRatioClass()}`}>
+                    
+                    {task.status === 'success' && (
+                      <div className="group w-full h-full relative cursor-pointer" onClick={() => setSelectedImage(task)}>
+                        <img src={task.imageUrl} alt="" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                           <button className="bg-white text-gray-900 px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-bold">
+                             <Eye className="w-4 h-4" /> 보기 및 저장
+                           </button>
+                        </div>
+                        {task.matchedImages?.length > 0 && (
+                          <div className="absolute bottom-2 left-2 flex gap-1 bg-black/50 p-1 rounded-lg backdrop-blur-sm">
+                            {task.matchedImages.map((img, i) => (
+                              <img key={i} src={img.dataUrl} className="w-6 h-6 object-cover rounded-md border border-white/30" title={img.name}/>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {task.status === 'processing' && (
+                      <div className="flex flex-col items-center gap-2 text-blue-500">
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                        <span className="text-xs font-bold bg-blue-100 px-2 py-1 rounded-full">이미지 생성 중...</span>
+                      </div>
+                    )}
+
+                    {task.status === 'pending' && <div className="text-gray-400 font-medium text-sm">대기 중</div>}
+                    
+                    {task.status === 'error' && (
+                      <div className="text-red-400 flex flex-col items-center p-4 text-center gap-2 w-full h-full justify-center overflow-auto">
+                        <AlertCircle className="w-6 h-6 mb-1 flex-shrink-0" />
+                        <span className="text-[10px] font-medium text-center px-1 break-words">{task.error}</span>
+                      </div>
+                    )}
+
+                    <div className="absolute top-2 left-2 flex gap-1">
+                      <span className="bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded backdrop-blur-sm">
+                        {aspectRatio === '16:9' ? '롱폼' : aspectRatio === '9:16' ? '쇼츠' : '1:1'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 텍스트 영역 */}
+                  <div className="p-4 flex-grow flex flex-col justify-between bg-white z-10">
+                    <p className="text-xs text-gray-800 line-clamp-3 mb-2" title={task.originalPrompt}>
+                      {task.originalPrompt}
+                    </p>
+                    <div className="flex items-center justify-between mt-auto">
+                      <span className="text-xs font-semibold text-gray-400">#{index + 1}</span>
+                      {task.status === 'success' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                      {task.status === 'error' && <AlertCircle className="w-4 h-4 text-red-500" />}
+                    </div>
+                  </div>
+
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {toastMessage && (
+          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 w-[90%] max-w-sm">
+            <span className="text-sm font-medium">{toastMessage}</span>
+          </div>
+        )}
+
+        {/* 상세 보기 모달 */}
+        {selectedImage && (
+          <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4" onClick={() => setSelectedImage(null)}>
+            <div className="relative max-w-3xl w-full max-h-[90vh] flex flex-col items-center bg-gray-900 rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="bg-white px-4 py-3 w-full flex justify-between items-center">
+                <span className="font-medium text-gray-800 truncate text-sm">{selectedImage.originalPrompt}</span>
+                <button onClick={() => setSelectedImage(null)} className="text-gray-500 hover:text-gray-900 font-bold">✕</button>
+              </div>
+              
+              <div className="w-full flex justify-center py-4 bg-gray-900 overflow-hidden">
+                <img src={selectedImage.imageUrl} className="max-w-full object-contain max-h-[50vh]" />
+              </div>
+
+              <div className="bg-gray-800 w-full p-4 flex flex-col sm:flex-row gap-3 justify-center items-center">
+                 <button onClick={() => setRawViewImage(selectedImage)} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-xl font-medium transition shadow-sm">
+                  <Maximize2 className="w-4 h-4" /> 전체화면 (캡처용)
+                </button>
+                <button onClick={() => handleShare(selectedImage)} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium transition shadow-lg">
+                  <Share2 className="w-4 h-4" /> 공유 / 갤러리 저장
+                </button>
+                <a href={selectedImage.imageUrl} download={getFileName(selectedImage.originalPrompt)} className="hidden sm:flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-xl transition">
+                  <Download className="w-4 h-4" /> PC 다운
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+};
+
+export default App;
+```eof
+
+**[적용된 주요 기능]**
+1. **상단 API 키 입력란 추가 (열쇠 아이콘 🔑):** 상단 가운데에 본인의 API 키를 입력할 수 있는 칸이 생겼습니다. 여기에 키를 넣으면 이후 모든 생성 과정에 이 키가 사용됩니다.
+2. **비전 AI 완전 제거, 직접 전송 (Direct Image-to-Image):** 텍스트 변환 과정 없이 업로드한 이미지 자체를 `Base64` 데이터로 변환해 이미지 생성 AI에게 직접 보냅니다. 피사체의 얼굴이나 분위기를 훨씬 더 세밀하게 반영할 수 있습니다.
+3. **로컬 스토리지 저장 기능:** 매번 키를 입력할 필요 없도록, 한 번 입력한 API 키는 브라우저 내부에 저장되어 재접속해도 유지되게 만들었습니다. (개인정보 보호를 위해 서버로 전송되지 않고 본인 폰/PC에만 저장됩니다.)
